@@ -28,16 +28,17 @@ messaging.onBackgroundMessage((payload) => {
   const data = payload?.data || {};
   const title = data.title || 'Fidely Club';
   const body = data.body || 'Tienes una nueva actualización en tu club de fidelización.';
-  const icon = data.image_url || data.icon || '/fidely.png';
+  const icon = data.icon_url || data.image_url || data.icon || '/fidely.png';
+  const hasBanner = data.has_banner === 'true' && data.image_url;
 
   const notificationOptions = {
     body: body,
     icon: icon,
     badge: '/favicon.svg',
-    image: data.image_url,
+    ...(hasBanner ? { image: data.image_url } : {}),
     data: data,
     tag: data.promo_id || data.store_id || 'fideli_notification',
-    renotify: false,
+    renotify: true,
   };
 
   self.registration.showNotification(title, notificationOptions);

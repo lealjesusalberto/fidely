@@ -197,11 +197,11 @@ export default function StoreClientsCRMView({
     const storeName = store.name || 'nuestro local';
 
     if (templateType === 'BIRTHDAY') {
-      defaultTitle = `🎂 ¡Feliz Cumpleaños de parte de ${storeName}!`;
-      defaultMessage = `¡Hola ${client.name}! Hoy en tu día especial, te esperamos en ${storeName} con una sorpresa y sellos dobles. ¡Ven a celebrar!`;
+      defaultTitle = `🎂 ¡Feliz Cumpleaños!`;
+      defaultMessage = `¡Hola ${client.name}! Hoy en tu día especial, ${storeName} te espera con un regalo de fidelidad y sellos dobles. ¡Pasa a celebrarlo!`;
     } else {
-      defaultTitle = `🎁 ¡Te faltan solo ${client.remainingStamps} sellos para tu premio en ${storeName}!`;
-      defaultMessage = `¡Hola ${client.name}! Estás muy cerca de completar tu tarjeta de fidelidad. Visítanos hoy, suma tu sello y reclama tu recompensa.`;
+      defaultTitle = `🎁 ¡Te faltan ${client.remainingStamps} sellos!`;
+      defaultMessage = `¡Hola ${client.name}! Estás muy cerca de completar tu tarjeta de fidelidad en ${storeName}. Visítanos hoy y reclama tu recompensa.`;
     }
 
     setPushTitle(defaultTitle);
@@ -218,7 +218,7 @@ export default function StoreClientsCRMView({
     const storeName = store.name || 'nuestro local';
 
     if (segmentType === 'CLOSE_TO_REWARD') {
-      setPushTitle(`🎁 ¡Completa tu tarjeta y reclama tu premio en ${storeName}!`);
+      setPushTitle(`🎁 ¡Completa tu tarjeta de sellos!`);
       setPushMessage(`Estás a solo 1 o 2 sellos de llevarte tu recompensa gratis. Visítanos hoy mismo en ${storeName} y disfruta tu premio.`);
       setPushModalData({
         target: 'SEGMENT_CLOSE',
@@ -226,8 +226,8 @@ export default function StoreClientsCRMView({
         badgeType: 'PREMIO'
       });
     } else if (segmentType === 'BIRTHDAYS') {
-      setPushTitle(`🎂 ¡Semana de Cumpleaños en ${storeName}!`);
-      setPushMessage(`A todos nuestros clientes cumpleañeros: vengan esta semana y disfruten de un regalo especial de fidelidad en su compra.`);
+      setPushTitle(`🎂 ¡Semana de Cumpleaños!`);
+      setPushMessage(`A todos nuestros clientes cumpleañeros: vengan esta semana a ${storeName} y disfruten de un regalo especial en su compra.`);
       setPushModalData({
         target: 'SEGMENT_BIRTHDAYS',
         recipientCount: clientsBirthdayThisWeek.length,
@@ -277,20 +277,28 @@ export default function StoreClientsCRMView({
         timestamp: Date.now()
       };
 
-      // 1. Guardar en Firestore store_promotions
-      if (db) {
-        await setDoc(doc(db, 'store_promotions', promoId), promoData);
-      }
-
-      // 2. Guardar en RTDB tiendas_promociones (dispara push web/móvil)
+      // 1. Guardar en RTDB tiendas_promociones (dispara automáticamente Cloud Function onTiendaPromocionPush)
       if (rtdb) {
         const rtdbRef = dbRef(rtdb, `tiendas_promociones/${store.id}/${promoId}`);
         await dbSet(rtdbRef, promoData);
+      }
 
-        // Si es cliente individual, registrar en su bandeja personal
-        if (targetClientId) {
+      // 2. Guardar en Firestore store_promotions de forma segura (sin bloquear si hay restricción)
+      if (db) {
+        try {
+          await setDoc(doc(db, 'store_promotions', promoId), promoData);
+        } catch (fsErr) {
+          console.warn('[FideliCRM] Registro secundario en Firestore omitido:', fsErr);
+        }
+      }
+
+      // 3. Opcional: Notificación en buzón personal RTDB
+      if (rtdb && targetClientId) {
+        try {
           const clientNotifRef = dbRef(rtdb, `notificaciones_cliente/${targetClientId}/${promoId}`);
           await dbSet(clientNotifRef, promoData);
+        } catch (notifErr) {
+          console.warn('[FideliCRM] Bandeja personal RTDB omitida:', notifErr);
         }
       }
 
