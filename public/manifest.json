@@ -1,0 +1,18 @@
+{
+  "short_name": "fidely",
+  "name": "fidely • Club de Fidelización",
+  "description": "Plataforma de fidelización comercial multitienda y puntos de descuento por local.",
+  "icons": [
+    {
+      "src": "/fidely.png",
+      "type": "image/png",
+      "sizes": "192x192 512x512 1024x1024",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#9C382A",
+  "theme_color": "#9C382A",
+  "display": "standalone",
+  "orientation": "portrait"
+}

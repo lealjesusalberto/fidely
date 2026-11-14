@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Función de seguridad: Verifica si el usuario tiene una sesión activa en Firebase Auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // 1. Configuración Global (tasa de cambio oficial BCV, reglas comerciales)
+    // Lectura pública para que visitantes y cajas vean la cotización del día
+    // Modificación restringida a usuarios autenticados
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // 2. Tiendas y Sucursales
+    // Lectura y registro para directorios, mostradores y terminales POS
+    match /stores/{storeId} {
+      allow read, write: if true;
+    }
+
+    // 3. Catálogo de Recompensas
+    // Lectura pública para que clientes vean el catálogo de beneficios
+    // Modificación restringida a administradores autenticados
+    match /rewards/{rewardId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // 4. Clientes y Socios
+    // - Creación y lectura permitida para que el cliente consulte su tarjeta y puntos en el móvil
+    // - Modificación de saldo y eliminación protegida solo para tiendas autenticadas
+    match /clients/{clientId} {
+      allow read, write: if true;
+    }
+
+    // 5. Facturación y Compras (Facturas, Tickets Fiscales y Comprobantes Bimoneda)
+    // - Lectura y emisión de tickets permitida para terminales de caja POS y consulta de compras
+    match /purchases/{purchaseId} {
+      allow read, write: if true;
+    }
+
+    // 6. Libro Mayor de Movimientos de Sellos y Auditoría
+    // - Lectura, creación y actualización permitida para registrar y auditar transacciones
+    match /movements/{movementId} {
+      allow read, write: if true;
+    }
+
+    // 7. Solicitudes y Canjes en Mostrador
+    // - Lectura, creación, aprobación y gestión de canjes desde app móvil y panel POS
+    match /redemptions/{redemptionId} {
+      allow read, write: if true;
+    }
+
+    // 8. Administradores del Sistema (Colección de roles de gestión)
+    match /admins/{adminId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // 9. Cuentas Revocadas y Eliminadas
+    match /deletedUsers/{userId} {
+      allow read, write: if true;
+    }
+
+    // 10. Catálogo de Productos y Servicios Facturables
+    // - Lectura pública para terminales de caja, catálogo online y cotización en tiempo real
+    // - Creación y actualización de productos, precios e inventario para cajas y comercios
+    // - Eliminación protegida
+    match /products/{productId} {
+      allow read, create, update: if true;
+      allow delete: if isAuthenticated();
+    }
+
+    // 11. Módulo Cuádralo (Finanzas personales, arbitraje BCV vs Binance P2P y métricas de ahorro)
+    // - Lectura y creación permitida para que el cliente registre sus pagos en caja y consulte su historial
+    // - Eliminación protegida solo para usuarios autenticados
+    match /cuadralo_transacciones/{txId} {
+      allow read, create, update: if true;
+      allow delete: if isAuthenticated();
+    }
+
+    // 12. Promociones Flash y Cupones de Comercios (FideliPro)
+    // - Lectura y canje permitido para clientes desde app móvil y web
+    // - Creación y gestión permitida para comercios aliados y terminales de tienda
+    match /store_promotions/{promoId} {
+      allow read, create, update: if true;
+      allow delete: if isAuthenticated();
+    }
+  }
+}

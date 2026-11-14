@@ -1,0 +1,7 @@
+/* App specific responsive layouts and animations */
+@media (max-width: 768px) {
+  header nav {
+    width: 100%;
+    justify-content: center;
+  }
+}
