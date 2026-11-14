@@ -89,5 +89,13 @@ service cloud.firestore {
       allow read, create, update: if true;
       allow delete: if isAuthenticated();
     }
+
+    // 13. Campañas de Publicidad Google Maps Ads (Pines y Búsquedas Locales)
+    // - Creación y reporte de pago desde el POS del comercio
+    // - Gestión, auditoría y aprobación desde el panel Administrador
+    match /googleMapsAdsCampaigns/{campaignId} {
+      allow read, create, update: if true;
+      allow delete: if isAuthenticated();
+    }
   }
 }
