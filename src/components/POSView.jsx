@@ -78,6 +78,7 @@ import StoreProfileModal from './StoreProfileModal';
 import StoreLogoBadge from './StoreLogoBadge';
 import StoreSubscriptionPaywallView from './StoreSubscriptionPaywallView';
 import StoreGoogleMapsAdsView from './StoreGoogleMapsAdsView';
+import StoreClientsCRMView from './StoreClientsCRMView';
 import { getStoreSubscriptionDetails, isStoreSubscriptionBlocked } from '../utils/subscriptionUtils';
 import { checkDuplicateClient } from '../utils/clientValidation';
 import { removeProduct, saveReward, saveClient, saveRedemption, saveMovement } from '../firebase/firestoreService';
@@ -2421,9 +2422,9 @@ export default function POSView({
   });
 
   const navModules = [
-    { id: 'MOBILE_POS', label: '📱 POS Móvil (Mostrador)', icon: Smartphone, desc: 'QR y aprobación de sellos', isMobileCta: true },
     { id: 'CARD_SETUP', label: 'Tarjeta de Fidelidad', icon: Palette, desc: 'Diseño, sellos y premios' },
     { id: 'REGISTER_SALE', label: 'Registrar Venta', icon: Receipt, desc: 'Cobro y facturación en caja' },
+    { id: 'STORE_CLIENTS', label: '👥 Clientes & Sellos', icon: Users, desc: 'Metas, premios y cumpleaños' },
     { id: 'PENDING_REQUESTS', label: 'Solicitudes QR', icon: Clock, badge: pendingRedemptionsForStore.length, desc: 'Aprobación de sellos en vivo' },
     { id: 'PROMOTIONS', label: 'Promociones Push', icon: Megaphone, badge: clientsWithStoreCard.length > 0 ? `${clientsWithStoreCard.length}` : null, desc: 'Difusión a clientes fidelizados' },
     { id: 'GOOGLE_MAPS_ADS', label: 'Google Maps Ads', icon: MapPin, desc: 'Pines y búsquedas en Maps' },
@@ -3505,55 +3506,6 @@ export default function POSView({
               Editar ➔
             </span>
           </div>
-        </div>
-
-        {/* Acceso Directo al Modo POS Móvil (Modo Mostrador) */}
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-          <button
-            type="button"
-            onClick={() => {
-              setIsMobilePosMode(true);
-              setIsSidebarOpen(false);
-              try { localStorage.setItem('fidely_pos_mobile_mode', 'true'); } catch (e) {}
-            }}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '9px 14px',
-              borderRadius: '9999px',
-              background: 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)',
-              color: '#FFFFFF',
-              border: 'none',
-              fontWeight: 800,
-              fontSize: '0.80rem',
-              cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(112, 9, 43, 0.28)',
-              transition: 'transform 0.15s ease'
-            }}
-            title="Abrir vista simplificada para teléfono y mostrador"
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-              <Smartphone size={15} />
-              <span>Ir a POS Móvil</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              {pendingRedemptionsForStore.length > 0 && (
-                <span style={{
-                  background: '#EF4444',
-                  color: '#FFFFFF',
-                  borderRadius: '9999px',
-                  padding: '1px 6px',
-                  fontSize: '0.65rem',
-                  fontWeight: 900
-                }}>
-                  {pendingRedemptionsForStore.length}
-                </span>
-              )}
-              <span style={{ opacity: 0.9 }}>→</span>
-            </div>
-          </button>
         </div>
 
         {/* Navigation Items */}
@@ -7932,6 +7884,16 @@ export default function POSView({
               </div>
 
             </div>
+          )}
+
+          {/* MODULE: MIS CLIENTES, METAS DE SELLOS & CUMPLEAÑOS (CRM) */}
+          {activeTab === 'STORE_CLIENTS' && (
+            <StoreClientsCRMView
+              store={safeStore}
+              clients={clients}
+              purchases={purchases}
+              onNotify={onNotify}
+            />
           )}
 
           {/* MODULE 6: AFICHE Y CÓDIGO QR DE MOSTRADOR CON MASCOTA FIDELY */}
