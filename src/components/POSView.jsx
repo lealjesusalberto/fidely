@@ -67,7 +67,8 @@ import {
   Smartphone,
   Maximize2,
   Minimize2,
-  ArrowRight
+  ArrowRight,
+  MapPin
 } from 'lucide-react';
 import QRCodeDisplay from './QRCodeDisplay';
 import StoreQrPrintStand from './StoreQrPrintStand';
@@ -76,6 +77,7 @@ import StoreOnboardingModal from './StoreOnboardingModal';
 import StoreProfileModal from './StoreProfileModal';
 import StoreLogoBadge from './StoreLogoBadge';
 import StoreSubscriptionPaywallView from './StoreSubscriptionPaywallView';
+import StoreGoogleMapsAdsView from './StoreGoogleMapsAdsView';
 import { getStoreSubscriptionDetails, isStoreSubscriptionBlocked } from '../utils/subscriptionUtils';
 import { checkDuplicateClient } from '../utils/clientValidation';
 import { removeProduct, saveReward, saveClient, saveRedemption, saveMovement } from '../firebase/firestoreService';
@@ -2424,6 +2426,7 @@ export default function POSView({
     { id: 'REGISTER_SALE', label: 'Registrar Venta', icon: Receipt, desc: 'Cobro y facturación en caja' },
     { id: 'PENDING_REQUESTS', label: 'Solicitudes QR', icon: Clock, badge: pendingRedemptionsForStore.length, desc: 'Aprobación de sellos en vivo' },
     { id: 'PROMOTIONS', label: 'Promociones Push', icon: Megaphone, badge: clientsWithStoreCard.length > 0 ? `${clientsWithStoreCard.length}` : null, desc: 'Difusión a clientes fidelizados' },
+    { id: 'GOOGLE_MAPS_ADS', label: 'Google Maps Ads', icon: MapPin, desc: 'Pines y búsquedas en Maps' },
     { id: 'PRODUCTS_CATALOG', label: 'Catálogo & Precios', icon: Package, desc: 'Productos, servicios e IVA', desktopOnly: true },
     { id: 'QR_DISPLAY', label: 'QR de Mostrador', icon: QrCode, desc: 'Display y cartel acrílico' },
     { id: 'SHIFT_SUMMARY', label: 'Cuadre de Turno', icon: BarChart3, desc: 'Facturación e historial', desktopOnly: true }
@@ -7940,6 +7943,16 @@ export default function POSView({
                 isModal={false}
               />
             </div>
+          )}
+
+          {/* MODULE 7: GOOGLE MAPS ADS (PROMOCIÓN LOCAL CON PINES PATROCINADOS) */}
+          {activeTab === 'GOOGLE_MAPS_ADS' && (
+            <StoreGoogleMapsAdsView
+              store={safeStore}
+              config={config}
+              dolarRateInfo={dolarRateInfo}
+              onNotify={onNotify}
+            />
           )}
 
 

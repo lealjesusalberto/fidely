@@ -329,6 +329,13 @@ export default function AdminPanelView({
   const [paymentsSearch, setPaymentsSearch] = useState('');
   const [subscriptionPaymentsList, setSubscriptionPaymentsList] = useState([]);
 
+  // Google Maps Ads State
+  const [googleMapsCampaigns, setGoogleMapsCampaigns] = useState([]);
+  const [mapsAdsFilter, setMapsAdsFilter] = useState('ALL'); // 'ALL' | 'PENDING' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'REJECTED'
+  const [mapsAdsSearch, setMapsAdsSearch] = useState('');
+  const [editingMetricsCampaign, setEditingMetricsCampaign] = useState(null);
+  const [metricsForm, setMetricsForm] = useState({ impressions: 0, routesRequested: 0, calls: 0 });
+
   useEffect(() => {
     setApprovalClientPage(1);
   }, [approvalSearch, approvalFilter, approvalSection]);
@@ -572,6 +579,71 @@ export default function AdminPanelView({
     onNotify(`Comprobante con referencia "${payment.reference}" marcado como RECHAZADO.`, 'info');
   };
 
+  // Handlers para Campañas Google Maps Ads
+  const handleApproveMapsCampaign = async (campaign) => {
+    if (!window.confirm(`¿Aprobar y activar campaña de Google Maps para "${campaign.storeName}"?\n\nPlan: ${campaign.planName} ($${campaign.priceUsd} USD)\nPresupuesto a gastar en Google Ads: $${campaign.budgetGoogleUsd} USD\nGanancia Fidely Pro (50%): $${campaign.fidelyProfitUsd} USD\n\nAl aprobarla, se marcará como ACTIVA y se iniciará el período de 30 días.`)) {
+      return;
+    }
+    try {
+      const now = Date.now();
+      const expiresAt = now + (30 * 24 * 60 * 60 * 1000);
+      await updateDoc(doc(db, 'googleMapsAdsCampaigns', campaign.id), {
+        status: 'ACTIVA',
+        approvedAt: now,
+        expiresAt: expiresAt,
+        statusNote: 'Aprobada por el Administrador. Campaña activa en Google Maps.'
+      });
+      onNotify?.(`🎉 ¡Campaña de "${campaign.storeName}" aprobada y activada exitosamente!`, 'success');
+    } catch (err) {
+      console.error('Error aprobando campaña Maps:', err);
+      onNotify?.('Error aprobando la campaña: ' + (err.message || err), 'error');
+    }
+  };
+
+  const handleTogglePauseMapsCampaign = async (campaign) => {
+    const newStatus = campaign.status === 'ACTIVA' ? 'PAUSADA' : 'ACTIVA';
+    try {
+      await updateDoc(doc(db, 'googleMapsAdsCampaigns', campaign.id), {
+        status: newStatus
+      });
+      onNotify?.(`Campaña de "${campaign.storeName}" marcada como ${newStatus}.`, 'info');
+    } catch (err) {
+      onNotify?.('Error actualizando estado: ' + (err.message || err), 'error');
+    }
+  };
+
+  const handleRejectMapsCampaign = async (campaign) => {
+    const reason = window.prompt(`Ingresa el motivo de rechazo para "${campaign.storeName}" (ej: Referencia no coincide, pago no recibido):`);
+    if (reason === null) return;
+    try {
+      await updateDoc(doc(db, 'googleMapsAdsCampaigns', campaign.id), {
+        status: 'RECHAZADA',
+        rejectedAt: Date.now(),
+        rejectionReason: reason || 'Pago no verificado'
+      });
+      onNotify?.(`Campaña rechazada.`, 'warning');
+    } catch (err) {
+      onNotify?.('Error rechazando campaña: ' + (err.message || err), 'error');
+    }
+  };
+
+  const handleSaveMetrics = async (campaignId) => {
+    try {
+      await updateDoc(doc(db, 'googleMapsAdsCampaigns', campaignId), {
+        metrics: {
+          impressions: Number(metricsForm.impressions) || 0,
+          routesRequested: Number(metricsForm.routesRequested) || 0,
+          calls: Number(metricsForm.calls) || 0
+        },
+        metricsUpdatedAt: Date.now()
+      });
+      setEditingMetricsCampaign(null);
+      onNotify?.('Métricas de rendimiento actualizadas exitosamente.', 'success');
+    } catch (err) {
+      onNotify?.('Error guardando métricas: ' + (err.message || err), 'error');
+    }
+  };
+
   const handleExtendStoreTrial = async (daysToAdd = 30) => {
     if (!subscriptionStore) return;
     const now = new Date();
@@ -702,6 +774,31 @@ export default function AdminPanelView({
       console.warn('Excepción al conectar listener de subscription_payments:', e);
     }
   }, []);
+
+  // Escuchar campañas de Google Maps Ads en tiempo real
+  useEffect(() => {
+    if (!db) return;
+    try {
+      const colRef = collection(db, 'googleMapsAdsCampaigns');
+      const unsubscribe = onSnapshot(colRef, (snapshot) => {
+        const list = [];
+        snapshot.forEach(docSnap => {
+          list.push({ ...docSnap.data(), id: docSnap.id });
+        });
+        list.sort((a, b) => (b.requestedAt || 0) - (a.requestedAt || 0));
+        setGoogleMapsCampaigns(list);
+      }, (err) => {
+        console.warn('Error escuchando googleMapsAdsCampaigns en AdminPanelView:', err);
+      });
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn('Excepción al conectar listener de googleMapsAdsCampaigns:', e);
+    }
+  }, []);
+
+  const pendingMapsCampaignsCount = useMemo(() => {
+    return googleMapsCampaigns.filter(c => c.status === 'PENDIENTE_APROBACION').length;
+  }, [googleMapsCampaigns]);
 
   // Consolidar pagos de la colección subscription_payments + pendientes en objetos tienda
   const consolidatedPayments = useMemo(() => {
@@ -1854,7 +1951,24 @@ service cloud.firestore {
             )}
           </button>
 
-          {/* 9. Reglas */}
+          {/* 9. Google Maps Ads */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('MAPS_ADS')}
+            className={`admin-sidebar-link ${activeTab === 'MAPS_ADS' ? 'active' : ''}`}
+          >
+            <div className="admin-sidebar-link-left">
+              <MapPin size={16} color={activeTab === 'MAPS_ADS' ? 'var(--c-accent)' : '#64748B'} />
+              <span>Google Maps Ads</span>
+            </div>
+            {pendingMapsCampaignsCount > 0 && (
+              <span className="admin-nav-badge" style={{ background: '#EF4444', color: '#FFFFFF', boxShadow: '0 1px 3px rgba(239, 68, 68, 0.4)' }}>
+                {pendingMapsCampaignsCount}
+              </span>
+            )}
+          </button>
+
+          {/* 10. Reglas */}
           <button
             type="button"
             onClick={() => setActiveTab('RULES')}
@@ -4696,6 +4810,617 @@ service cloud.firestore {
           )}
         </div>
       )}
+
+      {/* TAB: GESTIÓN DE GOOGLE MAPS ADS (50% GANANCIA NETA FIDELY PRO) */}
+      {activeTab === 'MAPS_ADS' && (() => {
+        // Totales financieros
+        const totalGrossUsd = googleMapsCampaigns
+          .filter(c => c.status === 'ACTIVA' || c.status === 'COMPLETADA')
+          .reduce((sum, c) => sum + (Number(c.priceUsd) || 0), 0);
+
+        const totalProfitUsd = googleMapsCampaigns
+          .filter(c => c.status === 'ACTIVA' || c.status === 'COMPLETADA')
+          .reduce((sum, c) => sum + (Number(c.fidelyProfitUsd) || 0), 0);
+
+        const totalGoogleBudgetUsd = googleMapsCampaigns
+          .filter(c => c.status === 'ACTIVA' || c.status === 'COMPLETADA')
+          .reduce((sum, c) => sum + (Number(c.budgetGoogleUsd) || 0), 0);
+
+        const activeCampaignsCount = googleMapsCampaigns.filter(c => c.status === 'ACTIVA').length;
+
+        // Filtrado por estado
+        const filteredByStatus = googleMapsCampaigns.filter(c => {
+          if (mapsAdsFilter === 'PENDING') return c.status === 'PENDIENTE_APROBACION';
+          if (mapsAdsFilter === 'ACTIVE') return c.status === 'ACTIVA';
+          if (mapsAdsFilter === 'PAUSED') return c.status === 'PAUSADA';
+          if (mapsAdsFilter === 'REJECTED') return c.status === 'RECHAZADA';
+          return true;
+        });
+
+        // Filtrado por texto de búsqueda
+        const q = mapsAdsSearch.trim().toLowerCase();
+        const filteredCampaigns = filteredByStatus.filter(c => {
+          if (!q) return true;
+          return (
+            (c.storeName || '').toLowerCase().includes(q) ||
+            (c.reference || '').toLowerCase().includes(q) ||
+            (c.headline || '').toLowerCase().includes(q) ||
+            (c.payerPhone || '').toLowerCase().includes(q) ||
+            (c.storeCity || '').toLowerCase().includes(q)
+          );
+        });
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+            
+            {/* 1. Header & Hero Panel */}
+            <div className="glass-panel" style={{ padding: '24px', background: 'linear-gradient(135deg, #FAF8F5 0%, #FFFFFF 100%)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                <div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px', borderRadius: '20px', background: 'rgba(239, 68, 68, 0.1)', color: '#DC2626', fontWeight: 800, fontSize: '0.75rem', marginBottom: '8px' }}>
+                    <MapPin size={14} />
+                    <span>GOOGLE MAPS ADS & PINES PATROCINADOS</span>
+                  </div>
+                  <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
+                    Campañas de Publicidad Local en Google Maps
+                  </h2>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '4px 0 0' }}>
+                    Audita comprobantes de pago en Bs, activa campañas locales y supervisa el presupuesto de Google Ads (Margen 50% para Fidely Pro).
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{
+                    padding: '8px 14px',
+                    borderRadius: '12px',
+                    background: 'rgba(16, 185, 129, 0.12)',
+                    color: '#059669',
+                    fontSize: '0.82rem',
+                    fontWeight: 800,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    border: '1px solid rgba(16, 185, 129, 0.25)'
+                  }}>
+                    <Sparkles size={15} />
+                    <span>Margen Fidely: 50% Neto</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* 2. Tarjetas de Resumen Financiero */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '14px',
+                marginTop: '20px',
+                paddingTop: '20px',
+                borderTop: '1px solid var(--border-subtle)'
+              }}>
+                {/* Ganancia Neta Fidely Pro */}
+                <div style={{ background: '#FFFFFF', padding: '16px', borderRadius: '12px', border: '1.5px solid #10B981', boxShadow: '0 2px 8px rgba(16, 185, 129, 0.08)' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    💰 Tu Ganancia Neta (50%)
+                  </div>
+                  <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#047857', marginTop: '4px' }}>
+                    ${totalProfitUsd.toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>USD</span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '3px' }}>
+                    Fondos limpios para Fidely Pro
+                  </div>
+                </div>
+
+                {/* Presupuesto en Tarjeta (Google Ads) */}
+                <div style={{ background: '#FFFFFF', padding: '16px', borderRadius: '12px', border: '1.5px solid #3B82F6', boxShadow: '0 2px 8px rgba(59, 130, 246, 0.08)' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    💳 A Pagar en Tarjeta (50%)
+                  </div>
+                  <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#1D4ED8', marginTop: '4px' }}>
+                    ${totalGoogleBudgetUsd.toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>USD</span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '3px' }}>
+                    Débito seguro Google Ads (~$0.25/día)
+                  </div>
+                </div>
+
+                {/* Ingreso Bruto Cobrado */}
+                <div style={{ background: '#FFFFFF', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    💵 Total Facturado
+                  </div>
+                  <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#0F172A', marginTop: '4px' }}>
+                    ${totalGrossUsd.toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>USD</span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '3px' }}>
+                    Pagado por comercios vía Pago Móvil
+                  </div>
+                </div>
+
+                {/* Campañas Activas */}
+                <div style={{ background: '#FFFFFF', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    📍 Campañas Activas en Maps
+                  </div>
+                  <div style={{ fontSize: '1.45rem', fontWeight: 900, color: activeCampaignsCount > 0 ? '#DC2626' : '#64748B', marginTop: '4px' }}>
+                    {activeCampaignsCount} <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>en vivo</span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '3px' }}>
+                    {pendingMapsCampaignsCount} pendiente(s) por revisar
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Barra de Filtros y Búsqueda */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+              {/* Filtros por Estado */}
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[
+                  { id: 'ALL', label: 'Todas las Campañas', count: googleMapsCampaigns.length },
+                  { id: 'PENDING', label: 'Pendientes de Revisión', count: pendingMapsCampaignsCount, highlight: pendingMapsCampaignsCount > 0 },
+                  { id: 'ACTIVE', label: 'Activas', count: googleMapsCampaigns.filter(c => c.status === 'ACTIVA').length },
+                  { id: 'PAUSED', label: 'Pausadas', count: googleMapsCampaigns.filter(c => c.status === 'PAUSADA').length },
+                  { id: 'REJECTED', label: 'Rechazadas', count: googleMapsCampaigns.filter(c => c.status === 'RECHAZADA').length }
+                ].map(flt => (
+                  <button
+                    key={flt.id}
+                    type="button"
+                    onClick={() => setMapsAdsFilter(flt.id)}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: '20px',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      border: '1px solid',
+                      borderColor: mapsAdsFilter === flt.id ? 'var(--c-primary)' : 'var(--border-subtle)',
+                      background: mapsAdsFilter === flt.id ? 'var(--c-primary)' : '#FFFFFF',
+                      color: mapsAdsFilter === flt.id ? '#FFFFFF' : 'var(--text-main)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span>{flt.label}</span>
+                    <span style={{
+                      padding: '1px 6px',
+                      borderRadius: '10px',
+                      fontSize: '0.68rem',
+                      fontWeight: 800,
+                      background: flt.highlight ? '#EF4444' : mapsAdsFilter === flt.id ? 'rgba(255,255,255,0.25)' : '#F1F5F9',
+                      color: flt.highlight ? '#FFFFFF' : mapsAdsFilter === flt.id ? '#FFFFFF' : '#475569'
+                    }}>
+                      {flt.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Input de Búsqueda */}
+              <div style={{ position: 'relative', minWidth: '240px' }}>
+                <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+                <input
+                  type="text"
+                  placeholder="Buscar tienda, referencia o titular..."
+                  value={mapsAdsSearch}
+                  onChange={(e) => setMapsAdsSearch(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px 8px 34px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border-subtle)',
+                    fontSize: '0.82rem',
+                    background: '#FFFFFF'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* 4. Lista de Campañas */}
+            {filteredCampaigns.length === 0 ? (
+              <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', color: '#64748B' }}>
+                <MapPin size={42} style={{ margin: '0 auto 12px', opacity: 0.35, color: '#DC2626' }} />
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 6px', color: 'var(--text-main)' }}>
+                  No se encontraron campañas de Google Maps
+                </h3>
+                <p style={{ fontSize: '0.82rem', margin: 0 }}>
+                  {mapsAdsSearch ? 'Intenta modificar los términos de tu búsqueda.' : 'Los comercios pueden solicitar campañas desde su módulo "Google Maps Ads" en el POS.'}
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {filteredCampaigns.map(camp => {
+                  const isPending = camp.status === 'PENDIENTE_APROBACION';
+                  const isActive = camp.status === 'ACTIVA';
+                  const isPaused = camp.status === 'PAUSADA';
+                  const isRejected = camp.status === 'RECHAZADA';
+
+                  const badgeColors = {
+                    PENDIENTE_APROBACION: { bg: '#FEF3C7', text: '#D97706', border: '#FDE68A', label: 'Pendiente de Revisión' },
+                    ACTIVA: { bg: '#D1FAE5', text: '#059669', border: '#A7F3D0', label: 'Activa en Google Maps' },
+                    PAUSADA: { bg: '#E0E7FF', text: '#4338CA', border: '#C7D2FE', label: 'Pausada' },
+                    RECHAZADA: { bg: '#FEE2E2', text: '#DC2626', border: '#FECACA', label: 'Rechazada' },
+                    COMPLETADA: { bg: '#F1F5F9', text: '#475569', border: '#E2E8F0', label: 'Culminada' }
+                  };
+                  const badge = badgeColors[camp.status] || badgeColors.PENDIENTE_APROBACION;
+
+                  return (
+                    <div
+                      key={camp.id}
+                      className="glass-panel"
+                      style={{
+                        padding: '20px 22px',
+                        background: '#FFFFFF',
+                        border: isPending ? '1.5px solid #F59E0B' : '1px solid var(--border-subtle)',
+                        boxShadow: isPending ? '0 4px 14px rgba(245, 158, 11, 0.12)' : '0 2px 8px rgba(0,0,0,0.03)'
+                      }}
+                    >
+                      {/* Cabecera de la Tarjeta */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          {camp.storeLogo ? (
+                            <img
+                              src={camp.storeLogo}
+                              alt={camp.storeName}
+                              style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', border: '1px solid var(--border-subtle)' }}
+                            />
+                          ) : (
+                            <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'var(--c-primary)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                              <Store size={22} />
+                            </div>
+                          )}
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
+                                {camp.storeName}
+                              </h3>
+                              <span style={{
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                fontSize: '0.68rem',
+                                fontWeight: 800,
+                                background: 'rgba(112, 9, 43, 0.08)',
+                                color: 'var(--c-primary)'
+                              }}>
+                                {camp.planName || 'Plan Google Maps'}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.76rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                              <MapPin size={12} color="#DC2626" />
+                              <span>{camp.storeAddress || camp.storeCity || 'Ubicación local'}</span>
+                              <span>•</span>
+                              <span>Radio: <strong>{camp.radiusKm || 3} km</strong></span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Estado y Fecha */}
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{
+                            padding: '4px 10px',
+                            borderRadius: '14px',
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            background: badge.bg,
+                            color: badge.text,
+                            border: `1px solid ${badge.border}`,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            {isPending && <Clock size={11} />}
+                            {isActive && <CheckCircle2 size={11} />}
+                            <span>{badge.label}</span>
+                          </span>
+                          <div style={{ fontSize: '0.70rem', color: '#94A3B8', marginTop: '4px' }}>
+                            {camp.requestedAt ? new Date(camp.requestedAt).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Reciente'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Desglose Financiero & Titular de Anuncio */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                        gap: '14px',
+                        background: '#F8FAFC',
+                        padding: '14px',
+                        borderRadius: '10px',
+                        marginBottom: '14px',
+                        border: '1px solid #E2E8F0'
+                      }}>
+                        {/* Anuncio y Cobertura */}
+                        <div>
+                          <div style={{ fontSize: '0.70rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', marginBottom: '4px' }}>
+                            📢 Titular Destacado en Google Maps:
+                          </div>
+                          <div style={{
+                            fontSize: '0.86rem',
+                            fontWeight: 700,
+                            color: '#0F172A',
+                            background: '#FFFFFF',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid #CBD5E1',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}>
+                            <Sparkles size={14} color="#F59E0B" />
+                            <span>"{camp.headline || '¡Visítanos hoy y acumula puntos con fidely CLUB!'}"</span>
+                          </div>
+                          {camp.payerPhone && (
+                            <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '6px' }}>
+                              📱 Teléfono de contacto comercio: <strong>{camp.payerPhone}</strong>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Desglose de Ganancia 50% */}
+                        <div>
+                          <div style={{ fontSize: '0.70rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', marginBottom: '6px' }}>
+                            ⚖️ Desglose Financiero (Margen 50% Fidely Pro):
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.78rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#64748B' }}>Total Pagado por Tienda:</span>
+                              <strong>${Number(camp.priceUsd || 0).toFixed(2)} USD {camp.priceVes ? `(Bs. ${Number(camp.priceVes).toLocaleString('es-VE')})` : ''}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#059669' }}>
+                              <span>💰 Tu Ganancia Neta (50%):</span>
+                              <strong>+${Number(camp.fidelyProfitUsd || (camp.priceUsd / 2)).toFixed(2)} USD</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#2563EB' }}>
+                              <span>💳 Presupuesto a Pagar con Tarjeta (50%):</span>
+                              <strong>-${Number(camp.budgetGoogleUsd || (camp.priceUsd / 2)).toFixed(2)} USD (~${(Number(camp.budgetGoogleUsd || (camp.priceUsd / 2)) / 30).toFixed(2)}/día)</strong>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Datos del Pago Móvil Reportado */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '10px',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        background: '#FFFBEB',
+                        border: '1px solid #FDE68A',
+                        fontSize: '0.78rem',
+                        marginBottom: '14px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                          <div>
+                            <span style={{ color: '#92400E', fontWeight: 700 }}>Banco Origen: </span>
+                            <span style={{ color: '#78350F' }}>{camp.bankOrigin || 'Pago Móvil'}</span>
+                          </div>
+                          <div>
+                            <span style={{ color: '#92400E', fontWeight: 700 }}>Referencia: </span>
+                            <code style={{ background: '#FEF3C7', padding: '2px 6px', borderRadius: '4px', fontWeight: 900, color: '#B45309' }}>
+                              {camp.reference || 'N/A'}
+                            </code>
+                          </div>
+                        </div>
+
+                        {/* Botón rápido copiar datos para configurar en Google Ads */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const dailyBudget = (Number(camp.budgetGoogleUsd || (camp.priceUsd / 2)) / 30).toFixed(2);
+                            const text = `CAMPAÑA GOOGLE MAPS ADS\nComercio: ${camp.storeName}\nUbicación: ${camp.storeAddress || camp.storeCity}\nRadio: ${camp.radiusKm} km\nTitular: ${camp.headline}\nPresupuesto Diario: $${dailyBudget} USD/día (Total mensual: $${camp.budgetGoogleUsd} USD)\nTeléfono: ${camp.payerPhone || 'N/A'}`;
+                            navigator.clipboard.writeText(text);
+                            onNotify?.('📋 Datos de la campaña copiados al portapapeles listos para pegar en Google Ads.', 'success');
+                          }}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid #D97706',
+                            background: '#FFFFFF',
+                            color: '#92400E',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <Copy size={12} />
+                          <span>Copiar para Google Ads</span>
+                        </button>
+                      </div>
+
+                      {/* Métricas y Botones de Acción */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                        {/* Métricas de Rendimiento */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.76rem', color: '#64748B' }}>
+                          <div title="Veces que apareció en Google Maps">
+                            👁️ Impresiones: <strong>{camp.metrics?.impressions || 0}</strong>
+                          </div>
+                          <div title="Veces que solicitaron ruta GPS">
+                            🚗 Rutas GPS: <strong>{camp.metrics?.routesRequested || 0}</strong>
+                          </div>
+                          <div title="Llamadas telefónicas iniciadas">
+                            📞 Llamadas: <strong>{camp.metrics?.calls || 0}</strong>
+                          </div>
+                        </div>
+
+                        {/* Botones de Control Administrativo */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          {/* Editar Métricas */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingMetricsCampaign(camp);
+                              setMetricsForm({
+                                impressions: camp.metrics?.impressions || 0,
+                                routesRequested: camp.metrics?.routesRequested || 0,
+                                calls: camp.metrics?.calls || 0
+                              });
+                            }}
+                            className="btn btn-secondary"
+                            style={{ padding: '6px 12px', fontSize: '0.74rem', fontWeight: 700 }}
+                            title="Actualizar métricas reales de Google Ads para que el comercio las vea"
+                          >
+                            <BarChart3 size={13} />
+                            <span>Actualizar Métricas</span>
+                          </button>
+
+                          {/* Pausar / Reanudar si está activa */}
+                          {(isActive || isPaused) && (
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePauseMapsCampaign(camp)}
+                              className="btn btn-outline"
+                              style={{ padding: '6px 12px', fontSize: '0.74rem', fontWeight: 700 }}
+                            >
+                              <span>{isActive ? '⏸️ Pausar' : '▶️ Reanudar'}</span>
+                            </button>
+                          )}
+
+                          {/* Rechazar si está pendiente */}
+                          {(isPending || isPaused) && (
+                            <button
+                              type="button"
+                              onClick={() => handleRejectMapsCampaign(camp)}
+                              className="btn btn-rose"
+                              style={{ padding: '6px 12px', fontSize: '0.74rem', fontWeight: 700 }}
+                            >
+                              <X size={13} />
+                              <span>Rechazar</span>
+                            </button>
+                          )}
+
+                          {/* Aprobar y Activar */}
+                          {isPending && (
+                            <button
+                              type="button"
+                              onClick={() => handleApproveMapsCampaign(camp)}
+                              className="btn btn-emerald"
+                              style={{
+                                padding: '7px 16px',
+                                fontSize: '0.76rem',
+                                fontWeight: 800,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                              }}
+                            >
+                              <CheckCircle2 size={14} />
+                              <span>Aprobar Pago y Activar Campaña</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* MODAL: EDITAR MÉTRICAS DE GOOGLE ADS */}
+            {editingMetricsCampaign && (
+              <div className="modal-overlay" onClick={() => setEditingMetricsCampaign(null)}>
+                <div
+                  className="modal-dialog"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ maxWidth: '440px', padding: '24px' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <BarChart3 size={18} color="var(--c-primary)" />
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>
+                        Actualizar Métricas Google Ads
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingMetricsCampaign(null)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  <p style={{ fontSize: '0.80rem', color: '#64748B', marginBottom: '16px' }}>
+                    Comercio: <strong>{editingMetricsCampaign.storeName}</strong>. Los números ingresados se reflejarán en vivo en el panel del comercio.
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                        👁️ Impresiones en Google Maps:
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={metricsForm.impressions}
+                        onChange={(e) => setMetricsForm(prev => ({ ...prev, impressions: e.target.value }))}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                        🚗 Solicitudes de ruta ("Cómo llegar" GPS):
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={metricsForm.routesRequested}
+                        onChange={(e) => setMetricsForm(prev => ({ ...prev, routesRequested: e.target.value }))}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                        📞 Clics a Llamar por Teléfono:
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={metricsForm.calls}
+                        onChange={(e) => setMetricsForm(prev => ({ ...prev, calls: e.target.value }))}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditingMetricsCampaign(null)}
+                      className="btn btn-secondary"
+                      style={{ padding: '8px 14px', fontSize: '0.78rem' }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveMetrics(editingMetricsCampaign.id)}
+                      className="btn btn-primary"
+                      style={{ padding: '8px 18px', fontSize: '0.78rem', fontWeight: 800 }}
+                    >
+                      Guardar Métricas
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        );
+      })()}
 
       {/* TAB 5: RULES CONFIGURATION (RN-10) */}
       {activeTab === 'RULES' && (
