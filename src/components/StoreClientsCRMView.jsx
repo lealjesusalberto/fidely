@@ -88,11 +88,11 @@ export default function StoreClientsCRMView({
   store = {},
   clients = [],
   purchases = [],
-  onNotify = () => {}
+  onNotify = () => { }
 }) {
   const [filterMode, setFilterMode] = useState('ALL_STAMPS'); // 'ALL_STAMPS' | 'CLOSE_TO_REWARD' | 'BIRTHDAYS' | 'READY_TO_CLAIM' | 'ALL'
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Modal de Notificación Push
   const [pushModalData, setPushModalData] = useState(null); // { target: 'INDIVIDUAL' | 'SEGMENT_CLOSE' | 'SEGMENT_BIRTHDAYS', client?: obj }
   const [pushTitle, setPushTitle] = useState('');
@@ -117,16 +117,16 @@ export default function StoreClientsCRMView({
       const targetStamps = storeCard
         ? (Number(storeCard.stampsTarget) || Number(store.stampsTarget) || Number(store.maxStamps) || 10)
         : (Number(store.stampsTarget) || Number(store.maxStamps) || 10);
-      
+
       const hasStamps = currentStamps > 0;
       const remainingStamps = Math.max(0, targetStamps - currentStamps);
       const percentage = Math.min(100, Math.round((currentStamps / targetStamps) * 100));
-      
+
       // Está por completar si le faltan 1 o 2 sellos, o tiene >= 70%
       const isCloseToReward = hasStamps && (remainingStamps <= 2 || percentage >= 70) && currentStamps < targetStamps;
       const isReadyToClaim = currentStamps >= targetStamps;
       const completedCycles = storeCard ? Number(storeCard.completedCycles || 0) : 0;
-      
+
       const bdayStr = client.birthDate || client.fecha_nacimiento || '';
       const birthdayStatus = getBirthdayStatus(bdayStr);
 
@@ -250,6 +250,13 @@ export default function StoreClientsCRMView({
       const isIndiv = pushModalData.target === 'INDIVIDUAL';
       const targetClientId = isIndiv ? pushModalData.client.id : null;
       const targetClientName = isIndiv ? pushModalData.client.name : null;
+      const targetClientIds = isIndiv
+        ? [pushModalData.client.id]
+        : (pushModalData.target === 'SEGMENT_CLOSE'
+            ? clientsCloseToReward.map(c => c.id)
+            : (pushModalData.target === 'SEGMENT_BIRTHDAYS'
+                ? clientsBirthdayThisWeek.map(c => c.id)
+                : null));
 
       const promoData = {
         id: promoId,
@@ -261,7 +268,9 @@ export default function StoreClientsCRMView({
         badgeType: pushModalData.badgeType || 'PROMO',
         targetAudience: isIndiv ? 'CLIENT' : 'SEGMENT',
         targetClientId: targetClientId || null,
+        targetClientIds: targetClientIds || null,
         targetClientName: targetClientName || null,
+        lastPushTrigger: Date.now(),
         totalDestinatarios: isIndiv ? 1 : (pushModalData.recipientCount || clientsWithStamps.length),
         status: 'ACTIVA',
         createdAt: new Date().toISOString(),
@@ -299,7 +308,7 @@ export default function StoreClientsCRMView({
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '22px' }}>
-      
+
       {/* 1. Header & Hero */}
       <div className="glass-panel" style={{ padding: '24px', background: 'linear-gradient(135deg, #FAF8F5 0%, #FFFFFF 100%)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
@@ -570,7 +579,7 @@ export default function StoreClientsCRMView({
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
-                  
+
                   {/* Info Cliente */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '240px', flex: '1 1 240px' }}>
                     <div style={{
@@ -594,7 +603,7 @@ export default function StoreClientsCRMView({
                         <h4 style={{ fontSize: '0.98rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
                           {client.name || 'Cliente sin nombre'}
                         </h4>
-                        
+
                         {/* Badge de Cumpleaños */}
                         {bday?.isToday && (
                           <span style={{
@@ -716,7 +725,7 @@ export default function StoreClientsCRMView({
 
                   {/* Acciones Rápidas */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    
+
                     {/* Botón WhatsApp Directo */}
                     {waPhone && (
                       <a
@@ -951,3 +960,4 @@ export default function StoreClientsCRMView({
     </div>
   );
 }
+
