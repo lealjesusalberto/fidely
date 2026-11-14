@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Users,
   Search,
@@ -18,7 +18,7 @@ import {
   PartyPopper
 } from 'lucide-react';
 import { db, rtdb } from '../firebase/config';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { ref as dbRef, set as dbSet } from 'firebase/database';
 
 /**
@@ -98,6 +98,26 @@ export default function StoreClientsCRMView({
   const [pushTitle, setPushTitle] = useState('');
   const [pushMessage, setPushMessage] = useState('');
   const [isSendingPush, setIsSendingPush] = useState(false);
+
+  // Limpieza preventiva: Garantizar que ninguna notificación privada e individual aparezca en la colección pública store_promotions
+  useEffect(() => {
+    if (!db) return;
+    const cleanOldPrivatePromos = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'store_promotions'));
+        snap.forEach(async (docSnap) => {
+          const d = docSnap.data();
+          if (docSnap.id.startsWith('push_crm_') || d?.isPrivate || d?.isIndividualPush || d?.targetAudience === 'INDIVIDUAL' || d?.targetClientId) {
+            try {
+              await deleteDoc(doc(db, 'store_promotions', docSnap.id));
+              console.log('[FideliCRM] Eliminada notificación privada de store_promotions pública:', docSnap.id);
+            } catch (_) {}
+          }
+        });
+      } catch (_) {}
+    };
+    cleanOldPrivatePromos();
+  }, []);
 
   // Mapear clientes con datos calculados para esta tienda
   const storeClientsData = useMemo(() => {
@@ -266,43 +286,29 @@ export default function StoreClientsCRMView({
         title: pushTitle.trim(),
         message: pushMessage.trim(),
         badgeType: pushModalData.badgeType || 'PROMO',
-        targetAudience: isIndiv ? 'CLIENT' : 'SEGMENT',
+        targetAudience: isIndiv ? 'INDIVIDUAL' : 'SEGMENT',
         targetClientId: targetClientId || null,
         targetClientIds: targetClientIds || null,
         targetClientName: targetClientName || null,
+        isPrivate: true,
+        isPublic: false,
+        isIndividualPush: true,
         lastPushTrigger: Date.now(),
-        totalDestinatarios: isIndiv ? 1 : (pushModalData.recipientCount || clientsWithStamps.length),
+        totalDestinatarios: isIndiv ? 1 : (pushModalData.recipientCount || 1),
         status: 'ACTIVA',
         createdAt: new Date().toISOString(),
         timestamp: Date.now()
       };
 
       // 1. Guardar en RTDB tiendas_promociones (dispara automáticamente Cloud Function onTiendaPromocionPush)
+      // NOTA CRÍTICA: NO se guarda en Firestore `store_promotions` porque este envío es privado e individual
+      // para el cliente seleccionado y NO debe publicarse en el catálogo de promociones que ven todos los clientes.
       if (rtdb) {
         const rtdbRef = dbRef(rtdb, `tiendas_promociones/${store.id}/${promoId}`);
         await dbSet(rtdbRef, promoData);
       }
 
-      // 2. Guardar en Firestore store_promotions de forma segura (sin bloquear si hay restricción)
-      if (db) {
-        try {
-          await setDoc(doc(db, 'store_promotions', promoId), promoData);
-        } catch (fsErr) {
-          console.warn('[FideliCRM] Registro secundario en Firestore omitido:', fsErr);
-        }
-      }
-
-      // 3. Opcional: Notificación en buzón personal RTDB
-      if (rtdb && targetClientId) {
-        try {
-          const clientNotifRef = dbRef(rtdb, `notificaciones_cliente/${targetClientId}/${promoId}`);
-          await dbSet(clientNotifRef, promoData);
-        } catch (notifErr) {
-          console.warn('[FideliCRM] Bandeja personal RTDB omitida:', notifErr);
-        }
-      }
-
-      onNotify(`🚀 ¡Notificación push enviada con éxito!`, 'success');
+      onNotify(`🚀 ¡Notificación push enviada con éxito exclusivamente a ${isIndiv ? targetClientName : 'los clientes seleccionados'}!`, 'success');
       setPushModalData(null);
       setPushTitle('');
       setPushMessage('');
