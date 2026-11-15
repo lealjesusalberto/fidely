@@ -56,7 +56,8 @@ export default function StoreSubscriptionPaywallView({
   dolarRateInfo = null,
   onRefresh,
   onNotify = () => { },
-  onLogout = () => { }
+  onLogout = () => { },
+  isEmbedded = false
 }) {
   const details = getStoreSubscriptionDetails(store, config, dolarRateInfo);
 
@@ -174,8 +175,18 @@ export default function StoreSubscriptionPaywallView({
   );
   const whatsappUrl = `https://wa.me/${supportWhatsapp}?text=${whatsappMessage}`;
 
+  const isPaidActive = details.isPaidActive;
+  const isInTrial = details.isInTrial;
+  const isBlocked = details.isBlocked;
+
   return (
-    <div style={{
+    <div style={isEmbedded ? {
+      width: '100%',
+      maxWidth: '880px',
+      margin: '0 auto',
+      padding: '8px 0 32px 0',
+      fontFamily: 'var(--font-body)'
+    } : {
       minHeight: '100vh',
       minHeight: '100dvh',
       background: 'linear-gradient(135deg, #FAF8F5 0%, #F5ECE3 100%)',
@@ -184,85 +195,90 @@ export default function StoreSubscriptionPaywallView({
       fontFamily: 'var(--font-body)'
     }}>
       {/* Top Navbar */}
-      <header style={{
-        background: '#FFFFFF',
-        borderBottom: '1px solid #EDE2D5',
-        padding: '12px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
-            background: 'var(--c-primary, #9C382A)',
-            color: '#FFFFFF',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 900,
-            fontSize: '1.1rem'
-          }}>
-            f
-          </div>
-          <div>
-            <div style={{ fontSize: '1rem', fontWeight: 900, color: '#1E293B', letterSpacing: '-0.3px' }}>
-              fidely <span style={{ color: 'var(--c-primary, #9C382A)' }}>CLUB</span>
-            </div>
-            <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600 }}>
-              Portal de Suscripciones Comercios
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button
-            type="button"
-            onClick={handleRefreshStatus}
-            disabled={isChecking}
-            className="btn btn-secondary"
-            style={{
-              padding: '6px 12px',
-              borderRadius: '8px',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              display: 'inline-flex',
+      {!isEmbedded && (
+        <header style={{
+          background: '#FFFFFF',
+          borderBottom: '1px solid #EDE2D5',
+          padding: '12px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              background: 'var(--c-primary, #9C382A)',
+              color: '#FFFFFF',
+              display: 'flex',
               alignItems: 'center',
-              gap: '6px'
-            }}
-            title="Verificar si la administración ya activó tu suscripción"
-          >
-            <RefreshCw size={14} className={isChecking ? 'animate-spin' : ''} />
-            <span>Verificar Activación</span>
-          </button>
+              justifyContent: 'center',
+              fontWeight: 900,
+              fontSize: '1.1rem'
+            }}>
+              f
+            </div>
+            <div>
+              <div style={{ fontSize: '1rem', fontWeight: 900, color: '#1E293B', letterSpacing: '-0.3px' }}>
+                fidely <span style={{ color: 'var(--c-primary, #9C382A)' }}>CLUB</span>
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600 }}>
+                Portal de Suscripciones Comercios
+              </div>
+            </div>
+          </div>
 
-          <button
-            type="button"
-            onClick={onLogout}
-            className="btn btn-secondary"
-            style={{
-              padding: '6px 12px',
-              borderRadius: '8px',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              color: '#DC2626',
-              borderColor: '#FECDD3',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <LogOut size={14} />
-            <span>Cerrar Sesión</span>
-          </button>
-        </div>
-      </header>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={handleRefreshStatus}
+              disabled={isChecking}
+              className="btn btn-secondary"
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              title="Verificar si la administración ya activó tu suscripción"
+            >
+              <RefreshCw size={14} className={isChecking ? 'animate-spin' : ''} />
+              <span>Verificar Activación</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onLogout}
+              className="btn btn-secondary"
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                color: '#DC2626',
+                borderColor: '#FECDD3',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <LogOut size={14} />
+              <span>Cerrar Sesión</span>
+            </button>
+          </div>
+        </header>
+      )}
 
       {/* Main Content Container */}
-      <main style={{
+      <main style={isEmbedded ? {
+        width: '100%',
+        boxSizing: 'border-box'
+      } : {
         flex: 1,
         maxWidth: '820px',
         width: '100%',
@@ -281,7 +297,11 @@ export default function StoreSubscriptionPaywallView({
         }}>
           {/* Header decorativo de estado */}
           <div style={{
-            background: 'linear-gradient(90deg, #9C382A 0%, #C2410C 100%)',
+            background: isPaidActive
+              ? 'linear-gradient(90deg, #15803D 0%, #16A34A 100%)'
+              : isInTrial
+                ? 'linear-gradient(90deg, #0284C7 0%, #0369A1 100%)'
+                : 'linear-gradient(90deg, #70092B 0%, #9C382A 100%)',
             padding: '24px 28px',
             color: '#FFFFFF',
             display: 'flex',
@@ -302,7 +322,13 @@ export default function StoreSubscriptionPaywallView({
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <Lock size={26} color="#FFFFFF" />
+                {isPaidActive ? (
+                  <CheckCircle2 size={26} color="#FFFFFF" />
+                ) : isInTrial ? (
+                  <Sparkles size={26} color="#FFFFFF" />
+                ) : (
+                  <CreditCard size={26} color="#FFFFFF" />
+                )}
               </div>
               <div>
                 <span style={{
@@ -316,12 +342,20 @@ export default function StoreSubscriptionPaywallView({
                   display: 'inline-block',
                   marginBottom: '4px'
                 }}>
-                  {details.trialMonths === 0
-                    ? 'Membresía Mensual Requerida'
-                    : `Período de Prueba Finalizado (${details.trialMonths} ${details.trialMonths === 1 ? 'Mes' : 'Meses'})`}
+                  {isPaidActive
+                    ? '✓ Plan fidely PRO Activo'
+                    : isInTrial
+                      ? `🎁 Prueba Gratuita (${details.trialDaysRemaining} días restantes)`
+                      : details.trialMonths === 0
+                        ? 'Membresía Mensual Requerida'
+                        : `Prueba Finalizada (${details.trialMonths} ${details.trialMonths === 1 ? 'Mes' : 'Meses'})`}
                 </span>
                 <h1 style={{ fontSize: '1.45rem', fontWeight: 900, margin: 0, lineHeight: 1.2 }}>
-                  {details.trialMonths === 0 ? 'Membresía Básica POS Requerida' : 'Terminal POS Bloqueado'}
+                  {isPaidActive
+                    ? 'Membresía Activa y Operativa'
+                    : isInTrial
+                      ? `Período Gratuito en Curso (${details.trialDaysRemaining} días)`
+                      : 'Membresía Mensual fidely PRO'}
                 </h1>
               </div>
             </div>
@@ -332,7 +366,7 @@ export default function StoreSubscriptionPaywallView({
               borderRadius: '12px',
               textAlign: 'right'
             }}>
-              <div style={{ fontSize: '0.7rem', opacity: 0.85, fontWeight: 700 }}>Comercio Registrado</div>
+              <div style={{ fontSize: '0.7rem', opacity: 0.85, fontWeight: 700 }}>Comercio</div>
               <div style={{ fontSize: '0.95rem', fontWeight: 800 }}>{store.name}</div>
               <div style={{ fontSize: '0.68rem', opacity: 0.75 }}>ID: {store.id}</div>
             </div>
@@ -341,9 +375,11 @@ export default function StoreSubscriptionPaywallView({
           {/* Cuerpo Informativo */}
           <div style={{ padding: '24px 28px' }}>
             <p style={{ fontSize: '0.92rem', color: '#475569', lineHeight: 1.55, margin: '0 0 20px 0' }}>
-              {details.trialMonths === 0
-                ? 'Para activar tu terminal POS, registrar compras en mostrador, otorgar sellos y emitir promociones a tus clientes, adquiere tu membresía mensual básica.'
-                : `Tu comercio disfrutó del período de cortesía gratuita (${details.trialMonths} ${details.trialMonths === 1 ? 'mes' : 'meses'}). Para reactivar de inmediato el acceso al panel POS, registrar compras y emitir promociones, renueva tu membresía mensual.`}
+              {isPaidActive
+                ? 'Tu comercio cuenta con acceso completo a todas las funciones de venta, sellos digitales, canje de premios y fidelización de clientes de fidely PRO.'
+                : isInTrial
+                  ? `Tu comercio está disfrutando del período de cortesía gratuita (${details.trialMonths} mes(es)). Todas las funciones del panel están desbloqueadas. Al culminar el período de prueba podrás renovar tu plan por solo $5/mes.`
+                  : 'Para disfrutar de todas las funciones operativas de fidely PRO (emitir sellos, canjear premios de clientes y registrar ventas en caja), adquiere tu membresía mensual básica de $5 USD al cambio oficial BCV.'}
             </p>
 
             {/* Tarjeta de Tarifa / Cotización a Tasa BCV */}

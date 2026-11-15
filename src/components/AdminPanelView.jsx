@@ -1685,6 +1685,7 @@ service cloud.firestore {
         subscriptionPagoMovilId: configForm.subscriptionPagoMovilId || 'J410679891',
         subscriptionPagoMovilHolder: configForm.subscriptionPagoMovilHolder || 'fidely CLUB / Conecta2',
         supportWhatsapp: configForm.supportWhatsapp || '584242098250',
+        requireStoreApproval: configForm.requireStoreApproval !== false,
       };
 
       if (setConfig) setConfig(updatedConfig);
@@ -5282,6 +5283,60 @@ service cloud.firestore {
                       onChange={(e) => setConfigForm(prev => ({ ...prev, subscriptionPagoMovilHolder: e.target.value }))}
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* 4. Política de Aprobación de Nuevas Tiendas */}
+              <div style={{ background: '#FFFFFF', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', marginTop: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: '220px' }}>
+                    <label className="form-label" style={{ fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span>Requerir Aprobación de Nuevos Comercios</span>
+                      <span style={{
+                        fontSize: '0.70rem',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        background: configForm.requireStoreApproval !== false ? '#FEF3C7' : '#DCFCE7',
+                        color: configForm.requireStoreApproval !== false ? '#B45309' : '#15803D'
+                      }}>
+                        {configForm.requireStoreApproval !== false ? '🔒 Aprobación Manual Requerida' : '⚡ Aprobación Automática Instantánea'}
+                      </span>
+                    </label>
+                    <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: '4px 0 0 0', lineHeight: 1.4 }}>
+                      {configForm.requireStoreApproval !== false
+                        ? 'Las tiendas nuevas quedan en estado "PENDIENTE" y requieren que el Super Administrador las apruebe antes de operar.'
+                        : 'Las tiendas nuevas se activan inmediatamente ("APROBADO") al registrarse y pueden ingresar de inmediato a su panel POS.'}
+                    </p>
+                  </div>
+
+                  <label style={{ position: 'relative', display: 'inline-block', width: '48px', height: '26px', cursor: 'pointer', flexShrink: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={configForm.requireStoreApproval !== false}
+                      onChange={(e) => setConfigForm(prev => ({ ...prev, requireStoreApproval: e.target.checked }))}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <span style={{
+                      position: 'absolute',
+                      cursor: 'pointer',
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      backgroundColor: configForm.requireStoreApproval !== false ? 'var(--c-primary, #70092B)' : '#CBD5E1',
+                      transition: '.3s',
+                      borderRadius: '34px'
+                    }}>
+                      <span style={{
+                        position: 'absolute',
+                        height: '20px',
+                        width: '20px',
+                        left: configForm.requireStoreApproval !== false ? '24px' : '4px',
+                        bottom: '3px',
+                        backgroundColor: 'white',
+                        transition: '.3s',
+                        borderRadius: '50%'
+                      }} />
+                    </span>
+                  </label>
                 </div>
               </div>
             </div>

@@ -287,6 +287,9 @@ export default function POSView({
   const safeStore = selectedStore || stores[0] || { id: 'STR-01', name: 'Tienda Principal', city: 'Caracas' };
   const currentStoreObj = stores.find(s => s.id === safeStore.id) || safeStore;
 
+  // Estado de si la membresía de la tienda requiere pago (período de prueba vencido o sin prueba gratuita)
+  const isSubscriptionBlocked = isStoreSubscriptionBlocked(currentStoreObj, config);
+
   // Estado de si la tienda ya configuró su tarjeta
   const isCardConfigured = Boolean(
     (currentStoreObj?.hasConfiguredCard || currentStoreObj?.cardConfiguredAt || localStorage.getItem(`fidely_card_configured_${currentStoreObj?.id}`)) &&
@@ -637,6 +640,11 @@ export default function POSView({
 
   const handlePublishPromotion = async (e) => {
     e.preventDefault();
+    if (isSubscriptionBlocked) {
+      if (onNotify) onNotify('⚠️ Para enviar y publicar promociones push debes adquirir una membresía de fidely PRO.', 'warning');
+      setActiveTab('MEMBERSHIP');
+      return;
+    }
     if (!promoForm.title.trim() || !promoForm.message.trim()) {
       onNotify('Por favor ingresa un título y un mensaje para la promoción', 'warning');
       return;
@@ -925,6 +933,11 @@ export default function POSView({
 
   // Approve stamp request (+1 Sello) from customer QR scan
   const handleApproveStampRequest = (req) => {
+    if (isSubscriptionBlocked) {
+      if (onNotify) onNotify('⚠️ Debes adquirir una membresía de fidely PRO para poder aprobar y otorgar sellos a tus clientes.', 'warning');
+      setActiveTab('MEMBERSHIP');
+      return;
+    }
     const targetClient = clients.find(c => 
       c.id === req.clientId || 
       (c.cedula && req.clientDocId && String(c.cedula).trim() === String(req.clientDocId).trim()) ||
@@ -1072,6 +1085,11 @@ export default function POSView({
 
   // Approve stamp reward claim (Entrega de Premio en mostrador)
   const handleApproveStampRewardClaim = async (req) => {
+    if (isSubscriptionBlocked) {
+      if (onNotify) onNotify('⚠️ Debes adquirir una membresía de fidely PRO para poder canjear y entregar premios en mostrador.', 'warning');
+      setActiveTab('MEMBERSHIP');
+      return;
+    }
     const targetClient = clients.find(c => 
       c.id === req.clientId || 
       (c.cedula && req.clientDocId && String(c.cedula).trim() === String(req.clientDocId).trim()) ||
@@ -1204,6 +1222,11 @@ export default function POSView({
 
   // Approve pending redemption after cashier audit
   const handleApprovePendingRedemption = (req) => {
+    if (isSubscriptionBlocked) {
+      if (onNotify) onNotify('⚠️ Debes adquirir una membresía de fidely PRO para procesar canjes de clientes en mostrador.', 'warning');
+      setActiveTab('MEMBERSHIP');
+      return;
+    }
     const targetClient = clients.find(c => c.id === req.clientId);
     if (!targetClient) {
       onNotify('Cliente no encontrado en el sistema.', 'error');
@@ -1630,6 +1653,11 @@ export default function POSView({
 
   // Canjear / usar un cupón directamente SIN necesidad de registrar una venta
   const handleRedeemCouponWithoutSale = async (coupon) => {
+    if (isSubscriptionBlocked) {
+      if (onNotify) onNotify('⚠️ Para canjear cupones debes adquirir una membresía de fidely PRO.', 'warning');
+      setActiveTab('MEMBERSHIP');
+      return;
+    }
     if (!coupon || !identifiedClient) return;
     const usedCouponId = coupon.id || coupon.voucherCode;
     const nowIso = new Date().toISOString();
@@ -1838,6 +1866,11 @@ export default function POSView({
   // Product Catalog Management Handlers
   const handleSaveProduct = (e) => {
     e.preventDefault();
+    if (isSubscriptionBlocked) {
+      if (onNotify) onNotify('⚠️ Para guardar productos en el catálogo debes adquirir una membresía de fidely PRO.', 'warning');
+      setActiveTab('MEMBERSHIP');
+      return;
+    }
     if (!productForm.name.trim() || !productForm.priceUsd || parseFloat(productForm.priceUsd) <= 0) {
       onNotify('Ingresa nombre y precio válido en USD', 'error');
       return;
@@ -1880,6 +1913,11 @@ export default function POSView({
   // Handle register purchase
   const handleRegisterPurchase = (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    if (isSubscriptionBlocked) {
+      if (onNotify) onNotify('⚠️ Para registrar ventas y facturar en caja debes adquirir una membresía de fidely PRO.', 'warning');
+      setActiveTab('MEMBERSHIP');
+      return;
+    }
     if (!identifiedClient) {
       onNotify('Por favor busca e identifica a un cliente primero (RN-01)', 'error');
       return;
@@ -2425,125 +2463,15 @@ export default function POSView({
     { id: 'PROMOTIONS', label: 'Promociones Push', icon: Megaphone, badge: clientsWithStoreCard.length > 0 ? `${clientsWithStoreCard.length}` : null, desc: 'Difusión a clientes fidelizados' },
     { id: 'PRODUCTS_CATALOG', label: 'Catálogo & Precios', icon: Package, desc: 'Productos, servicios e IVA', desktopOnly: true },
     { id: 'QR_DISPLAY', label: 'QR de Mostrador', icon: QrCode, desc: 'Display y cartel acrílico' },
-    { id: 'SHIFT_SUMMARY', label: 'Cuadre de Turno', icon: BarChart3, desc: 'Facturación e historial', desktopOnly: true }
+    { id: 'SHIFT_SUMMARY', label: 'Cuadre de Turno', icon: BarChart3, desc: 'Facturación e historial', desktopOnly: true },
+    {
+      id: 'MEMBERSHIP',
+      label: 'Membresía fidely PRO',
+      icon: CreditCard,
+      badge: isSubscriptionBlocked ? 'Requerida' : null,
+      desc: 'Pago mensual y plan'
+    }
   ];
-
-  // Guardia de Seguridad: Bloqueo de POS si culminó la prueba de 3 meses sin suscripción pagada ($5 BCV)
-  if (isStoreSubscriptionBlocked(currentStoreObj, config)) {
-    return (
-      <StoreSubscriptionPaywallView
-        store={currentStoreObj}
-        stores={stores}
-        config={config}
-        dolarRateInfo={dolarRateInfo}
-        onNotify={onNotify}
-        onLogout={onLogout}
-      />
-    );
-  }
-
-  // Guardia de Seguridad: Bloqueo obligatorio hasta que la tienda cree y configure su tarjeta de fidelización
-  if (!isCardConfigured) {
-    return (
-      <div className="pos-terminal-container" style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px 16px',
-        background: 'linear-gradient(135deg, #FAF8F5 0%, #F5EFEB 100%)',
-        boxSizing: 'border-box'
-      }}>
-        <div style={{
-          maxWidth: '560px',
-          width: '100%',
-          background: '#FFFFFF',
-          borderRadius: '24px',
-          padding: '36px 28px',
-          boxShadow: '0 20px 48px rgba(112, 9, 43, 0.12)',
-          border: '2px solid #EEDCD5',
-          textAlign: 'center'
-        }}>
-          <div style={{
-            width: '76px',
-            height: '76px',
-            borderRadius: '22px',
-            background: 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)',
-            color: '#FFFFFF',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 18px auto',
-            boxShadow: '0 8px 24px rgba(112, 9, 43, 0.3)'
-          }}>
-            <Palette size={38} />
-          </div>
-
-          <span style={{
-            fontSize: '0.72rem',
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            background: '#FEE2E2',
-            color: '#991B1B',
-            padding: '4px 12px',
-            borderRadius: '999px',
-            display: 'inline-block',
-            marginBottom: '12px'
-          }}>
-            ⚠️ Paso 1 Obligatorio
-          </span>
-
-          <h2 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#1E293B', margin: '0 0 10px 0', lineHeight: 1.25 }}>
-            Configura tu Tarjeta de Fidelidad Digital
-          </h2>
-
-          <p style={{ fontSize: '0.88rem', color: '#64748B', lineHeight: 1.5, margin: '0 0 24px 0' }}>
-            Para que tu comercio <strong>{currentStoreObj.name}</strong> pueda operar, entregar sellos en mostrador y registrar compras, debes definir los colores, la meta de sellos y los premios de tu tarjeta.
-          </p>
-
-          <button
-            type="button"
-            onClick={() => setShowStoreProfileModal(true)}
-            className="btn btn-primary"
-            style={{
-              width: '100%',
-              padding: '14px 24px',
-              fontSize: '1rem',
-              fontWeight: 900,
-              borderRadius: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '10px',
-              background: 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)',
-              boxShadow: '0 6px 20px rgba(112, 9, 43, 0.35)',
-              cursor: 'pointer'
-            }}
-          >
-            <Palette size={20} />
-            <span>🎨 Crear y Configurar mi Tarjeta Ahora</span>
-          </button>
-        </div>
-
-        {/* Modal de Configuración de Tarjeta */}
-        {showStoreProfileModal && currentStoreObj && (
-          <StoreProfileModal
-            isOpen={showStoreProfileModal}
-            onClose={() => setShowStoreProfileModal(false)}
-            store={currentStoreObj}
-            stores={stores}
-            setStores={setStores}
-            config={config}
-            onNotify={onNotify}
-            initialTab="STAMPS"
-            isMandatoryFirstTime={true}
-          />
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="pos-terminal-container">
@@ -2638,6 +2566,45 @@ export default function POSView({
               <span>🖥️ Panel Completo</span>
             </button>
           </header>
+
+          {/* Banner de Membresía en Modo Móvil */}
+          {isSubscriptionBlocked && (
+            <div style={{
+              margin: '10px 14px 0',
+              padding: '10px 14px',
+              borderRadius: '12px',
+              background: '#FFFBEB',
+              border: '1px solid #FCD34D',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px'
+            }}>
+              <div style={{ fontSize: '0.74rem', color: '#92400E', fontWeight: 700 }}>
+                ⚠️ Modo Demostración: Requiere membresía para aprobar sellos.
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobilePosMode(false);
+                  setActiveTab('MEMBERSHIP');
+                }}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                Activar $5
+              </button>
+            </div>
+          )}
 
           {/* Selector de Pestañas Móviles (Grandes y Táctiles) */}
           <div style={{ padding: '12px 14px 6px', maxWidth: '560px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
@@ -3542,8 +3509,8 @@ export default function POSView({
                   </div>
                 </div>
 
-                {mod.badge > 0 && (
-                  <span className="pos-nav-badge">
+                {Boolean(mod.badge) && (
+                  <span className="pos-nav-badge" style={typeof mod.badge === 'string' ? { background: '#EF4444', color: '#FFFFFF', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '6px' } : undefined}>
                     {mod.badge}
                   </span>
                 )}
@@ -3835,6 +3802,85 @@ export default function POSView({
 
         {/* Workspace Body Area */}
         <div className="pos-workspace-content">
+
+          {/* Banner Amigable de Membresía Requerida (Modo No Invasivo) */}
+          {isSubscriptionBlocked && activeTab !== 'MEMBERSHIP' && (
+            <div style={{
+              background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
+              border: '1.5px solid #FCD34D',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '14px',
+              flexWrap: 'wrap',
+              boxShadow: '0 4px 14px rgba(217, 119, 6, 0.08)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '240px', flex: 1 }}>
+                <div style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: '0 3px 8px rgba(180, 83, 9, 0.25)'
+                }}>
+                  <CreditCard size={22} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 900, color: '#92400E' }}>
+                      Modo Demostración & Visualización
+                    </span>
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 800,
+                      background: '#FEE2E2',
+                      color: '#991B1B',
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      textTransform: 'uppercase'
+                    }}>
+                      Membresía Requerida
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.80rem', color: '#B45309', margin: 0, lineHeight: 1.4 }}>
+                    Puedes explorar todas las secciones del panel. Para disfrutar de todas las funciones operativas de <strong>fidely PRO</strong> (emitir sellos, canjear premios de clientes y facturar en caja), adquiere tu membresía de <strong>$5 USD/mes</strong> a tasa oficial BCV.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('MEMBERSHIP')}
+                style={{
+                  padding: '10px 18px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  fontWeight: 900,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 12px rgba(112, 9, 43, 0.28)',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <CreditCard size={16} />
+                <span>Activar Membresía</span>
+                <span>➔</span>
+              </button>
+            </div>
+          )}
 
           {/* Banner de Advertencia Obligatoria: Completar Datos Básicos y Logo del Comercio */}
           {(!currentStoreObj?.phone?.trim() || !currentStoreObj?.logo?.trim()) && (
@@ -7890,6 +7936,23 @@ export default function POSView({
                 isModal={false}
               />
             </div>
+          )}
+
+          {/* MODULE 7: MEMBRESÍA & FACTURACIÓN FIDELY PRO */}
+          {activeTab === 'MEMBERSHIP' && (
+            <StoreSubscriptionPaywallView
+              store={currentStoreObj}
+              stores={stores}
+              config={config}
+              dolarRateInfo={dolarRateInfo}
+              onRefresh={() => {
+                const refreshed = stores.find(s => s.id === currentStoreObj?.id);
+                if (refreshed) setCurrentStoreObj(refreshed);
+              }}
+              onNotify={onNotify}
+              onLogout={onLogout}
+              isEmbedded={true}
+            />
           )}
 
 

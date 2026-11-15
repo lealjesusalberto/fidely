@@ -24,7 +24,8 @@ export const DEFAULT_CONFIG = {
   subscriptionPagoMovilPhone: '04242098250',
   subscriptionPagoMovilId: 'J410679891',
   subscriptionPagoMovilHolder: 'fidely CLUB / Conecta2',
-  supportWhatsapp: '584242098250'
+  supportWhatsapp: '584242098250',
+  requireStoreApproval: true // Control para requerir o no aprobación manual de nuevas tiendas
 };
 
 // Base limpia: sin datos dummy para producción

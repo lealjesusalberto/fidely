@@ -484,7 +484,7 @@ export default function LoginView({
       email: cleanEmail,
       phone: storePhone.trim() || '',
       qrCode: `FIDELY-LOCAL-${newStoreId}`,
-      status: 'PENDIENTE',
+      status: config?.requireStoreApproval !== false ? 'PENDIENTE' : 'APROBADO',
       createdAt: now.toISOString(),
       trialEndsAt: trialEnds.toISOString(),
       subscriptionStatus: trialMonths > 0 ? 'TRIAL' : 'UNPAID',
