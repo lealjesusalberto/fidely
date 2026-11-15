@@ -1280,10 +1280,10 @@ export default function LoginView({
               {activeTab === 'REGISTER_STORE'
                 ? 'Registra tu comercio y activa el terminal POS para fidelizar a tus clientes.'
                 : activeTab === 'REGISTER'
-                ? 'Crea tu cuenta de socio y obtén tu tarjeta digital de fidelización.'
-                : activeTab === 'JOIN'
-                ? 'Únete a este comercio y activa tu tarjeta de sellos instantánea.'
-                : 'Ingresa con tu correo o credenciales para acceder a tu cuenta o terminal POS.'}
+                  ? 'Crea tu cuenta de socio y obtén tu tarjeta digital de fidelización.'
+                  : activeTab === 'JOIN'
+                    ? 'Únete a este comercio y activa tu tarjeta de sellos instantánea.'
+                    : 'Ingresa con tu correo o credenciales para acceder a tu cuenta o terminal POS.'}
             </p>
           </div>
 
