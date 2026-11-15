@@ -298,6 +298,7 @@ export default function LoginView({
         roleConfirmed: true, // ROL DEFINITIVO BLOQUEADO
         accountType: 'STORE',
         createdAt: now.toISOString(),
+        trialMonths: trialMonths,
         trialEndsAt: trialEnds.toISOString(),
         subscriptionStatus: trialMonths > 0 ? 'TRIAL' : 'UNPAID',
         subscriptionPaidUntil: null,
@@ -486,6 +487,7 @@ export default function LoginView({
       qrCode: `FIDELY-LOCAL-${newStoreId}`,
       status: config?.requireStoreApproval !== false ? 'PENDIENTE' : 'APROBADO',
       createdAt: now.toISOString(),
+      trialMonths: trialMonths,
       trialEndsAt: trialEnds.toISOString(),
       subscriptionStatus: trialMonths > 0 ? 'TRIAL' : 'UNPAID',
       subscriptionPaidUntil: null,

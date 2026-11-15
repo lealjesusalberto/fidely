@@ -12,16 +12,16 @@ import ErrorBoundary from './components/ErrorBoundary';
 import NotificationToast from './components/NotificationToast';
 import FirebaseSyncModal from './components/FirebaseSyncModal';
 import AllianceFloatingBanner from './components/AllianceFloatingBanner';
-import { 
-  DEFAULT_CONFIG, 
-  INITIAL_STORES, 
-  INITIAL_CLIENTS, 
-  INITIAL_REWARDS, 
-  INITIAL_PURCHASES, 
-  INITIAL_MOVEMENTS, 
-  INITIAL_REDEMPTIONS 
+import {
+  DEFAULT_CONFIG,
+  INITIAL_STORES,
+  INITIAL_CLIENTS,
+  INITIAL_REWARDS,
+  INITIAL_PURCHASES,
+  INITIAL_MOVEMENTS,
+  INITIAL_REDEMPTIONS
 } from './data/initialData';
-import { 
+import {
   COLLECTIONS,
   subscribeCollection,
   subscribeConfig,
@@ -68,7 +68,7 @@ export default function App() {
         if (Array.isArray(parsed)) {
           return parsed.filter(s => !s.name?.includes('Sambil Chacao') && s.id !== 'STR-00');
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     return [];
   });
@@ -81,7 +81,7 @@ export default function App() {
         if (Array.isArray(parsed)) {
           return parsed.filter(c => !c.name?.includes('Lucía Martínez') && c.id !== 'CLI-00');
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     return [];
   });
@@ -94,7 +94,7 @@ export default function App() {
         if (Array.isArray(parsed)) {
           return parsed.filter(r => !r.id?.startsWith('REW-0'));
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     return [];
   });
@@ -105,7 +105,7 @@ export default function App() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed.filter(p => !p.id?.startsWith('PUR-0'));
-      } catch (e) {}
+      } catch (e) { }
     }
     return [];
   });
@@ -116,7 +116,7 @@ export default function App() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed.filter(m => !m.id?.startsWith('MOV-000'));
-      } catch (e) {}
+      } catch (e) { }
     }
     return [];
   });
@@ -127,7 +127,7 @@ export default function App() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed.filter(r => r.id !== 'RED-501' && r.id !== 'REQ-1108');
-      } catch (e) {}
+      } catch (e) { }
     }
     return [];
   });
@@ -138,7 +138,7 @@ export default function App() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
-      } catch (e) {}
+      } catch (e) { }
     }
     return [];
   });
@@ -153,7 +153,7 @@ export default function App() {
           return null;
         }
         return parsed;
-      } catch (e) {}
+      } catch (e) { }
     }
     return null;
   });
@@ -178,7 +178,7 @@ export default function App() {
         }
         return 'LOGIN';
       }
-    } catch (e) {}
+    } catch (e) { }
     return currentUser ? currentUser.role : 'LANDING';
   });
 
@@ -216,7 +216,7 @@ export default function App() {
           const updated = { ...prev, vesExchangeRate: res.rate };
           try {
             localStorage.setItem('fidely_config', JSON.stringify(updated));
-          } catch (e) {}
+          } catch (e) { }
           // Sincronizar en Cloud Firestore para mantener la misma tasa en todos los terminales
           saveConfig(updated);
           return updated;
@@ -332,7 +332,7 @@ export default function App() {
       const params = new URLSearchParams(window.location.search);
       const storeParam = params.get('store') || params.get('join');
       if (storeParam && stores.length > 0) {
-        const found = stores.find(s => 
+        const found = stores.find(s =>
           String(s.id || '').toLowerCase() === storeParam.toLowerCase() ||
           String(s.name || '').toLowerCase().includes(storeParam.toLowerCase())
         );
@@ -366,7 +366,7 @@ export default function App() {
           }
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }, [stores, currentUser]);
 
   // 1. Sincronización en tiempo real de colecciones públicas (Configuración, Tiendas y Premios)
@@ -378,8 +378,8 @@ export default function App() {
         if (remoteConfig && Object.keys(remoteConfig).length > 0) {
           setConfig(prev => {
             const remoteRate = remoteConfig.vesExchangeRate;
-            const rateToUse = (typeof remoteRate === 'number' && remoteRate >= 100) 
-              ? remoteRate 
+            const rateToUse = (typeof remoteRate === 'number' && remoteRate >= 100)
+              ? remoteRate
               : prev.vesExchangeRate;
             return {
               ...remoteConfig,
@@ -783,7 +783,7 @@ export default function App() {
 
   // Handle Logout
   const handleLogout = () => {
-    logoutFromFirebase().catch(() => {});
+    logoutFromFirebase().catch(() => { });
     setCurrentUser(null);
     setSelectedClient(null);
     setCurrentRole('LANDING');
@@ -812,7 +812,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: currentRole === 'LOGIN' ? '#FAF8F5' : 'var(--bg-app)' }}>
-      
+
       {/* Top Application Header */}
       {currentRole !== 'LOGIN' && currentRole !== 'CLIENT' && currentRole !== 'POS' && (
         <Header
@@ -843,155 +843,156 @@ export default function App() {
         overflowX: 'hidden'
       }}>
         <ErrorBoundary onResetRole={() => setCurrentRole('LANDING')}>
-        
-        {/* 1. LOGIN & REGISTRO VIEW */}
-        {currentRole === 'LOGIN' && (
-          <LoginView
-            clients={clients}
-            stores={stores}
-            setStores={handleSetStores}
-            config={config}
-            joinStoreId={joinStoreId}
-            onClearJoinStore={() => {
-              setJoinStoreId(null);
-              try {
-                window.history.replaceState({}, document.title, window.location.pathname);
-              } catch (e) {}
-            }}
-            onLogin={handleLogin}
-            onRegisterClient={handleRegisterClient}
-            onGoToLanding={() => setCurrentRole('LANDING')}
-          />
-        )}
 
-        {/* 2. PUBLIC LANDING PAGE */}
-        {currentRole === 'LANDING' && (
-          <LandingPageView
-            onNavigate={() => setCurrentRole('LOGIN')}
-            config={config}
-          />
-        )}
-
-        {/* Floating Alliance Box for public visitors (Landing & Login) */}
-        {(currentRole === 'LANDING' || currentRole === 'LOGIN') && (
-          <AllianceFloatingBanner />
-        )}
-
-        {/* 3. CLIENT PORTAL (Guard with Pending Verification) */}
-        {currentRole === 'CLIENT' && (
-          selectedClient?.status === 'PENDIENTE' || selectedClient?.status === 'RECHAZADO' ? (
-            <PendingVerificationView
-              type="CLIENT"
-              data={selectedClient}
+          {/* 1. LOGIN & REGISTRO VIEW */}
+          {currentRole === 'LOGIN' && (
+            <LoginView
               clients={clients}
               stores={stores}
-              config={config}
-              onUpdateClient={(up) => {
-                setSelectedClient(up);
-                handleSetClients(prev => prev.map(c => c.id === up.id ? up : c));
-              }}
-              onNotify={handleNotify}
-              onRefresh={() => {
-                const refreshed = clients.find(c => c.id === selectedClient?.id);
-                if (refreshed) setSelectedClient(refreshed);
-              }}
-              onProceed={(approvedClient) => {
-                setSelectedClient(approvedClient);
-              }}
-              onLogout={handleLogout}
-            />
-          ) : (
-            <ClientPortalView
-              selectedClient={selectedClient}
-              clients={clients}
-              setClients={handleSetClients}
-              rewards={rewards}
-              redemptions={redemptions}
-              setRedemptions={handleSetRedemptions}
-              movements={movements}
-              setMovements={handleSetMovements}
-              config={config}
-              stores={stores}
-              purchases={purchases}
-              onNotify={handleNotify}
-              onLogout={handleLogout}
-              onNavigate={setCurrentRole}
-            />
-          )
-        )}
-
-        {/* 4. POS STORE TERMINAL (Guard with Pending Verification si está activada la aprobación) */}
-        {currentRole === 'POS' && (
-          selectedStore?.status === 'RECHAZADO' || (selectedStore?.status === 'PENDIENTE' && config?.requireStoreApproval !== false) ? (
-            <PendingVerificationView
-              type="STORE"
-              data={selectedStore}
-              stores={stores}
-              onRefresh={() => {
-                const refreshed = stores.find(s => s.id === selectedStore?.id);
-                if (refreshed) setSelectedStore(refreshed);
-              }}
-              onProceed={(approvedStore) => {
-                setSelectedStore(approvedStore);
-              }}
-              onLogout={handleLogout}
-            />
-          ) : (
-            <POSView
-              stores={stores}
-              selectedStore={selectedStore}
-              onSelectStore={setSelectedStore}
               setStores={handleSetStores}
+              config={config}
+              joinStoreId={joinStoreId}
+              onClearJoinStore={() => {
+                setJoinStoreId(null);
+                try {
+                  window.history.replaceState({}, document.title, window.location.pathname);
+                } catch (e) { }
+              }}
+              onLogin={handleLogin}
+              onRegisterClient={handleRegisterClient}
+              onGoToLanding={() => setCurrentRole('LANDING')}
+            />
+          )}
+
+          {/* 2. PUBLIC LANDING PAGE */}
+          {currentRole === 'LANDING' && (
+            <LandingPageView
+              onNavigate={() => setCurrentRole('LOGIN')}
+              config={config}
+            />
+          )}
+
+          {/* Floating Alliance Box for public visitors (Landing & Login) */}
+          {(currentRole === 'LANDING' || currentRole === 'LOGIN') && (
+            <AllianceFloatingBanner />
+          )}
+
+          {/* 3. CLIENT PORTAL (Guard with Pending Verification) */}
+          {currentRole === 'CLIENT' && (
+            selectedClient?.status === 'PENDIENTE' || selectedClient?.status === 'RECHAZADO' ? (
+              <PendingVerificationView
+                type="CLIENT"
+                data={selectedClient}
+                clients={clients}
+                stores={stores}
+                config={config}
+                onUpdateClient={(up) => {
+                  setSelectedClient(up);
+                  handleSetClients(prev => prev.map(c => c.id === up.id ? up : c));
+                }}
+                onNotify={handleNotify}
+                onRefresh={() => {
+                  const refreshed = clients.find(c => c.id === selectedClient?.id);
+                  if (refreshed) setSelectedClient(refreshed);
+                }}
+                onProceed={(approvedClient) => {
+                  setSelectedClient(approvedClient);
+                }}
+                onLogout={handleLogout}
+              />
+            ) : (
+              <ClientPortalView
+                selectedClient={selectedClient}
+                clients={clients}
+                setClients={handleSetClients}
+                rewards={rewards}
+                redemptions={redemptions}
+                setRedemptions={handleSetRedemptions}
+                movements={movements}
+                setMovements={handleSetMovements}
+                config={config}
+                stores={stores}
+                purchases={purchases}
+                onNotify={handleNotify}
+                onLogout={handleLogout}
+                onNavigate={setCurrentRole}
+              />
+            )
+          )}
+
+          {/* 4. POS STORE TERMINAL (Guard with Pending Verification si está activada la aprobación) */}
+          {currentRole === 'POS' && (
+            selectedStore?.status === 'RECHAZADO' || (selectedStore?.status === 'PENDIENTE' && config?.requireStoreApproval !== false) ? (
+              <PendingVerificationView
+                type="STORE"
+                data={selectedStore}
+                stores={stores}
+                onRefresh={() => {
+                  const refreshed = stores.find(s => s.id === selectedStore?.id);
+                  if (refreshed) setSelectedStore(refreshed);
+                }}
+                onProceed={(approvedStore) => {
+                  setSelectedStore(approvedStore);
+                }}
+                onLogout={handleLogout}
+              />
+            ) : (
+              <POSView
+                stores={stores}
+                selectedStore={selectedStore}
+                onSelectStore={setSelectedStore}
+                setStores={handleSetStores}
+                clients={clients}
+                setClients={handleSetClients}
+                purchases={purchases}
+                setPurchases={handleSetPurchases}
+                movements={movements}
+                setMovements={handleSetMovements}
+                rewards={rewards}
+                setRewards={handleSetRewards}
+                products={products}
+                setProducts={handleSetProducts}
+                redemptions={redemptions}
+                setRedemptions={handleSetRedemptions}
+                config={config}
+                onNotify={handleNotify}
+                onLogout={handleLogout}
+                onNavigate={setCurrentRole}
+                currentUser={currentUser}
+                firebaseStatus={firebaseStatus}
+                onOpenFirebaseModal={() => setShowFirebaseModal(true)}
+                isFetchingRate={isFetchingDolarRate}
+                onRefreshDolarRate={() => handleRefreshDolarRate(true)}
+                dolarRateInfo={dolarRateInfo}
+              />
+            )
+          )}
+
+          {/* 5. ADMIN CONSOLE & RULES CONFIG */}
+          {currentRole === 'ADMIN' && (
+            <AdminPanelView
               clients={clients}
               setClients={handleSetClients}
               purchases={purchases}
               setPurchases={handleSetPurchases}
-              movements={movements}
-              setMovements={handleSetMovements}
+              stores={stores}
+              setStores={handleSetStores}
               rewards={rewards}
               setRewards={handleSetRewards}
-              products={products}
-              setProducts={handleSetProducts}
+              movements={movements}
+              setMovements={handleSetMovements}
               redemptions={redemptions}
               setRedemptions={handleSetRedemptions}
               config={config}
+              setConfig={handleSetConfig}
               onNotify={handleNotify}
-              onLogout={handleLogout}
               onNavigate={setCurrentRole}
-              currentUser={currentUser}
-              firebaseStatus={firebaseStatus}
-              onOpenFirebaseModal={() => setShowFirebaseModal(true)}
-              isFetchingRate={isFetchingDolarRate}
+              onSelectStore={setSelectedStore}
+              isFetchingDolarRate={isFetchingDolarRate}
               onRefreshDolarRate={() => handleRefreshDolarRate(true)}
               dolarRateInfo={dolarRateInfo}
             />
-          )
-        )}
-
-        {/* 5. ADMIN CONSOLE & RULES CONFIG */}
-        {currentRole === 'ADMIN' && (
-          <AdminPanelView
-            clients={clients}
-            setClients={handleSetClients}
-            purchases={purchases}
-            setPurchases={handleSetPurchases}
-            stores={stores}
-            setStores={handleSetStores}
-            rewards={rewards}
-            setRewards={handleSetRewards}
-            movements={movements}
-            setMovements={handleSetMovements}
-            redemptions={redemptions}
-            setRedemptions={handleSetRedemptions}
-            config={config}
-            setConfig={handleSetConfig}
-            onNotify={handleNotify}
-            onNavigate={setCurrentRole}
-            onSelectStore={setSelectedStore}
-            isFetchingDolarRate={isFetchingDolarRate}
-            onRefreshDolarRate={() => handleRefreshDolarRate(true)}
-          />
-        )}
+          )}
         </ErrorBoundary>
       </main>
 

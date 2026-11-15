@@ -45,6 +45,7 @@ export function getStoreSubscriptionDetails(store, config = {}, dolarRateInfo = 
   if (!store) {
     return {
       isBlocked: false,
+      hasAccess: true,
       statusLabel: 'UNKNOWN',
       isInTrial: configuredTrialDays > 0,
       trialDaysRemaining: configuredTrialDays,
@@ -63,10 +64,19 @@ export function getStoreSubscriptionDetails(store, config = {}, dolarRateInfo = 
   // 1. Fecha de Registro
   const createdAtDate = parseDateSafe(store.createdAt || store.registeredAt) || now;
 
-  // 2. Fecha Límite de Prueba Gratuita (calculada según la política de meses de prueba del sistema)
+  // 2. Fecha Límite de Prueba Gratuita:
+  // Si la tienda ya tiene una fecha trialEndsAt guardada (asignada al momento de su registro o ajustada por el admin),
+  // esa fecha DEBE RESPETARSE SIEMPRE, garantizando que cambios en la configuración global de prueba
+  // apliquen ÚNICAMENTE a los nuevos comercios que se registren a partir de ese momento.
+  // Si no tiene trialEndsAt explícito guardado (tiendas antiguas creadas antes del campo),
+  // se respetan los 3 meses (90 días) originales con los que iniciaron las tiendas del sistema.
   let trialEndsAtDate = parseDateSafe(store.trialEndsAt);
-  if (!trialEndsAtDate || !store.customTrialEndsAt) {
-    trialEndsAtDate = new Date(createdAtDate.getTime() + (configuredTrialDays * 24 * 60 * 60 * 1000));
+  if (!trialEndsAtDate) {
+    const storeTrialMonths = store.trialMonths !== undefined
+      ? parseInt(store.trialMonths, 10)
+      : (configuredTrialMonths > 0 ? configuredTrialMonths : 3);
+    const storeTrialDays = Math.max(0, storeTrialMonths * 30);
+    trialEndsAtDate = new Date(createdAtDate.getTime() + (storeTrialDays * 24 * 60 * 60 * 1000));
   }
 
   // 3. Exención de Pago (Concedida manualmente por el Super Administrador)
@@ -79,13 +89,19 @@ export function getStoreSubscriptionDetails(store, config = {}, dolarRateInfo = 
     (paidUntilDate && paidUntilDate.getTime() > now.getTime())
   );
 
-  // 5. Período de Prueba en Curso
+  // 5. Período de Prueba en Curso (se respeta la fecha individual calculada/almacenada)
   const msRemainingTrial = trialEndsAtDate.getTime() - now.getTime();
-  const trialDaysRemaining = configuredTrialDays === 0 ? 0 : Math.max(0, Math.ceil(msRemainingTrial / (1000 * 60 * 60 * 24)));
-  const isInTrial = !isPaidActive && !isExempt && (configuredTrialDays > 0) && (msRemainingTrial > 0);
+  const trialDaysRemaining = Math.max(0, Math.ceil(msRemainingTrial / (1000 * 60 * 60 * 24)));
+  const isInTrial = !isPaidActive && !isExempt && (msRemainingTrial > 0);
 
-  // 6. Bloqueo de Dashboard: Se bloquea si NO está exento, NO está pagado y ya expiró o no tiene prueba
+  // 6. Bloqueo de Dashboard / Acceso Operativo al Panel:
+  // La tienda tiene ACCESO TOTAL a operaciones del terminal si:
+  // - Está exenta (isExempt)
+  // - O tiene suscripción pagada activa (isPaidActive)
+  // - O está dentro de su período de prueba gratuito (isInTrial)
+  // Si ninguna de las 3 se cumple, está BLOQUEADA / REQUIERE PAGO ($5 BCV)
   const isBlocked = !isExempt && !isPaidActive && !isInTrial;
+  const hasAccess = !isBlocked;
 
   // 7. Etiqueta de Estado
   let statusLabel = 'BLOCKED';
@@ -119,6 +135,7 @@ export function getStoreSubscriptionDetails(store, config = {}, dolarRateInfo = 
     trialDaysRemaining,
     trialMonths: configuredTrialMonths,
     isBlocked,
+    hasAccess,
     statusLabel,
     priceUsd,
     rate,

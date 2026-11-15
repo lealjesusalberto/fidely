@@ -290,7 +290,8 @@ export default function AdminPanelView({
   onNavigate,
   onSelectStore,
   isFetchingDolarRate = false,
-  onRefreshDolarRate
+  onRefreshDolarRate,
+  dolarRateInfo = null
 }) {
   const [activeTab, setActiveTab] = useState('DASHBOARD'); // DASHBOARD, APPROVALS, CLIENTS, TRANSACTIONS, REWARDS, RULES, AUDIT
   const [clientSearch, setClientSearch] = useState('');
@@ -450,15 +451,16 @@ export default function AdminPanelView({
   // Store Subscription Management Modal state ($5 USD a tasa BCV tras 3 meses gratis)
   const [subscriptionStore, setSubscriptionStore] = useState(null);
 
-  const handleExtendStoreSubscription = async (monthsToAdd = 1) => {
-    if (!subscriptionStore) return;
+  const handleExtendStoreSubscription = async (monthsToAdd = 1, storeTarget = null) => {
+    const target = storeTarget || subscriptionStore;
+    if (!target) return;
     const now = new Date();
-    const currentPaid = parseDateSafe(subscriptionStore.subscriptionPaidUntil);
+    const currentPaid = parseDateSafe(target.subscriptionPaidUntil);
     const baseDate = (currentPaid && currentPaid.getTime() > now.getTime()) ? currentPaid : now;
     const newPaidUntil = new Date(baseDate.getTime() + (monthsToAdd * 30 * 24 * 60 * 60 * 1000));
 
     const updated = {
-      ...subscriptionStore,
+      ...target,
       subscriptionPaidUntil: newPaidUntil.toISOString(),
       subscriptionStatus: 'ACTIVE',
       subscriptionExempt: false,
@@ -470,13 +472,15 @@ export default function AdminPanelView({
     if (setStores) {
       setStores(prev => prev.map(s => s.id === updated.id ? updated : s));
     }
-    setSubscriptionStore(updated);
+    if (subscriptionStore && subscriptionStore.id === updated.id) {
+      setSubscriptionStore(updated);
+    }
 
     // Si la tienda tenía un pago pendiente reportado en firestore, marcarlo como APROBADO
-    if (subscriptionStore.pendingSubscriptionPayment?.reference && db) {
+    if (target.pendingSubscriptionPayment?.reference && db) {
       const matchP = subscriptionPaymentsList.find(p =>
-        p.reference === subscriptionStore.pendingSubscriptionPayment.reference &&
-        p.storeId === subscriptionStore.id
+        p.reference === target.pendingSubscriptionPayment.reference &&
+        p.storeId === target.id
       );
       if (matchP?.id) {
         try {
@@ -572,15 +576,16 @@ export default function AdminPanelView({
     onNotify(`Comprobante con referencia "${payment.reference}" marcado como RECHAZADO.`, 'info');
   };
 
-  const handleExtendStoreTrial = async (daysToAdd = 30) => {
-    if (!subscriptionStore) return;
+  const handleExtendStoreTrial = async (daysToAdd = 30, storeTarget = null) => {
+    const target = storeTarget || subscriptionStore;
+    if (!target) return;
     const now = new Date();
-    const currentTrial = parseDateSafe(subscriptionStore.trialEndsAt);
+    const currentTrial = parseDateSafe(target.trialEndsAt);
     const baseDate = (currentTrial && currentTrial.getTime() > now.getTime()) ? currentTrial : now;
     const newTrialEnds = new Date(baseDate.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
 
     const updated = {
-      ...subscriptionStore,
+      ...target,
       trialEndsAt: newTrialEnds.toISOString(),
       subscriptionStatus: 'TRIAL',
       subscriptionExempt: false,
@@ -591,19 +596,22 @@ export default function AdminPanelView({
     if (setStores) {
       setStores(prev => prev.map(s => s.id === updated.id ? updated : s));
     }
-    setSubscriptionStore(updated);
+    if (subscriptionStore && subscriptionStore.id === updated.id) {
+      setSubscriptionStore(updated);
+    }
     onNotify(`¡Prueba gratuita de "${updated.name}" extendida por ${daysToAdd} días hasta el ${newTrialEnds.toLocaleDateString('es-VE')}!`, 'success');
   };
 
-  const handleToggleStoreExemption = async () => {
-    if (!subscriptionStore) return;
+  const handleToggleStoreExemption = async (storeTarget = null) => {
+    const target = storeTarget || subscriptionStore;
+    if (!target) return;
     const now = new Date();
-    const newExempt = !subscriptionStore.subscriptionExempt;
+    const newExempt = !target.subscriptionExempt;
 
     const updated = {
-      ...subscriptionStore,
+      ...target,
       subscriptionExempt: newExempt,
-      subscriptionStatus: newExempt ? 'EXEMPT' : (subscriptionStore.subscriptionPaidUntil ? 'ACTIVE' : 'TRIAL'),
+      subscriptionStatus: newExempt ? 'EXEMPT' : (target.subscriptionPaidUntil ? 'ACTIVE' : 'TRIAL'),
       updatedAt: now.toISOString()
     };
 
@@ -611,17 +619,20 @@ export default function AdminPanelView({
     if (setStores) {
       setStores(prev => prev.map(s => s.id === updated.id ? updated : s));
     }
-    setSubscriptionStore(updated);
+    if (subscriptionStore && subscriptionStore.id === updated.id) {
+      setSubscriptionStore(updated);
+    }
     onNotify(`¡Exención de pago para "${updated.name}" ${newExempt ? 'CONCEDIDA (Cortesía permanente)' : 'REVOCADA'}!`, 'info');
   };
 
-  const handleBlockStoreSubscription = async () => {
-    if (!subscriptionStore) return;
+  const handleBlockStoreSubscription = async (storeTarget = null) => {
+    const target = storeTarget || subscriptionStore;
+    if (!target) return;
     const now = new Date();
     const pastDate = new Date(now.getTime() - 86400000).toISOString();
 
     const updated = {
-      ...subscriptionStore,
+      ...target,
       trialEndsAt: pastDate,
       subscriptionPaidUntil: pastDate,
       subscriptionStatus: 'BLOCKED',
@@ -633,7 +644,9 @@ export default function AdminPanelView({
     if (setStores) {
       setStores(prev => prev.map(s => s.id === updated.id ? updated : s));
     }
-    setSubscriptionStore(updated);
+    if (subscriptionStore && subscriptionStore.id === updated.id) {
+      setSubscriptionStore(updated);
+    }
     onNotify(`Terminal POS de "${updated.name}" BLOQUEADO por falta de pago ($5 BCV).`, 'warning');
   };
 
@@ -1168,6 +1181,7 @@ export default function AdminPanelView({
       canEditPercent: Boolean(storeForm.canEditPercent),
       status: 'APROBADO',
       createdAt: now.toISOString(),
+      trialMonths: trialMonths,
       trialEndsAt: trialEnds.toISOString(),
       subscriptionStatus: trialMonths > 0 ? 'TRIAL' : 'UNPAID',
       subscriptionPaidUntil: null,
@@ -2719,6 +2733,22 @@ service cloud.firestore {
         const pendingStores = stores.filter(s => s.status === 'PENDIENTE');
         const pendingClients = clients.filter(c => c.status === 'PENDIENTE');
 
+        // Estadísticas de Membresía y Acceso al Panel para Tiendas
+        let storeTrialCount = 0;
+        let storePaidCount = 0;
+        let storeBlockedCount = 0;
+        let storeExemptCount = 0;
+        let storePendingPaymentsCount = 0;
+
+        (stores || []).forEach(st => {
+          const sub = getStoreSubscriptionDetails(st, config, dolarRateInfo);
+          if (st.pendingSubscriptionPayment) storePendingPaymentsCount++;
+          if (sub.isExempt) storeExemptCount++;
+          else if (sub.isPaidActive) storePaidCount++;
+          else if (sub.isInTrial) storeTrialCount++;
+          else if (sub.isBlocked) storeBlockedCount++;
+        });
+
         // Filter stores (más nuevas primero)
         const sortedStores = [...stores].sort((a, b) => {
           const mA = String(a.id || '').match(/STR-(\d+)/i);
@@ -2728,8 +2758,13 @@ service cloud.firestore {
           return numB - numA;
         });
         const filteredStores = sortedStores.filter(s => {
+          const sub = getStoreSubscriptionDetails(s, config, dolarRateInfo);
           const matchFilter = 
             approvalFilter === 'ALL' ? true :
+            approvalFilter === 'TRIAL' ? sub.isInTrial :
+            approvalFilter === 'ACTIVE' ? sub.isPaidActive :
+            approvalFilter === 'BLOCKED' ? sub.isBlocked :
+            approvalFilter === 'EXEMPT' ? sub.isExempt :
             approvalFilter === 'PENDING' ? (s.status === 'PENDIENTE') :
             approvalFilter === 'APPROVED' ? (s.status === 'APROBADO' || !s.status) :
             approvalFilter === 'REJECTED' ? (s.status === 'RECHAZADO') :
@@ -2740,7 +2775,8 @@ service cloud.firestore {
             s.city?.toLowerCase().includes(approvalSearch.toLowerCase()) ||
             s.category?.toLowerCase().includes(approvalSearch.toLowerCase()) ||
             s.manager?.toLowerCase().includes(approvalSearch.toLowerCase()) ||
-            s.email?.toLowerCase().includes(approvalSearch.toLowerCase());
+            s.email?.toLowerCase().includes(approvalSearch.toLowerCase()) ||
+            s.id?.toLowerCase().includes(approvalSearch.toLowerCase());
           return matchFilter && matchSearch;
         });
 
@@ -2909,17 +2945,21 @@ service cloud.firestore {
 
               {/* Status Filter & Search */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', gap: '4px', background: '#FAF8F5', padding: '3px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
-                  {[
-                    { id: 'ALL', label: approvalSection === 'STORES' ? 'Todas las Tiendas' : 'Todos' },
+                <div style={{ display: 'flex', gap: '4px', background: '#FAF8F5', padding: '3px', borderRadius: '10px', border: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
+                  {(approvalSection === 'STORES' ? [
+                    { id: 'ALL', label: `Todas (${stores.length})` },
+                    { id: 'TRIAL', label: `🎁 En Prueba (${storeTrialCount})` },
+                    { id: 'ACTIVE', label: `⭐ Pagadas (${storePaidCount})` },
+                    { id: 'BLOCKED', label: `🔴 Sin Acceso (${storeBlockedCount})` },
+                    ...(storePendingPaymentsCount > 0 ? [{ id: 'PAYMENTS', label: `💳 Pagos por Validar (${storePendingPaymentsCount})` }] : []),
+                    { id: 'EXEMPT', label: `🛡️ Exentas (${storeExemptCount})` },
+                    ...(pendingStores.length > 0 ? [{ id: 'PENDING', label: `🟡 Reg. Pendiente (${pendingStores.length})` }] : [])
+                  ] : [
+                    { id: 'ALL', label: 'Todos' },
                     { id: 'APPROVED', label: 'Aprobados' },
                     { id: 'PENDING', label: 'Pendientes' },
-                    { id: 'REJECTED', label: 'Rechazados' },
-                    ...(approvalSection === 'STORES' && (stores || []).some(s => s.pendingSubscriptionPayment) ? [{
-                      id: 'PAYMENTS',
-                      label: `💳 Pagos por Validar (${(stores || []).filter(s => s.pendingSubscriptionPayment).length})`
-                    }] : [])
-                  ].map(f => (
+                    { id: 'REJECTED', label: 'Rechazados' }
+                  ]).map(f => (
                     <button
                       key={f.id}
                       type="button"
@@ -2996,6 +3036,126 @@ service cloud.firestore {
             {/* SECTION 1: STORES TABLE */}
             {approvalSection === 'STORES' && (
               <div>
+                {/* BANNER DE RESUMEN DE ESTADO DE MEMBRESÍAS & ACCESO AL PANEL */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+                  gap: '10px',
+                  marginBottom: '14px'
+                }}>
+                  <div
+                    onClick={() => setApprovalFilter(approvalFilter === 'TRIAL' ? 'ALL' : 'TRIAL')}
+                    style={{
+                      background: approvalFilter === 'TRIAL' ? '#FEF3C7' : '#FFFFFF',
+                      border: approvalFilter === 'TRIAL' ? '2px solid #F59E0B' : '1px solid #E2E8F0',
+                      borderRadius: '12px',
+                      padding: '12px 14px',
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Haz clic para filtrar solo tiendas en prueba gratuita"
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#92400E' }}>🎁 EN PRUEBA GRATIS</span>
+                      <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#B45309' }}>{storeTrialCount}</span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: '#78350F', marginTop: '4px', fontWeight: 600 }}>
+                      🟢 Acceso total (días restantes activos)
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => setApprovalFilter(approvalFilter === 'ACTIVE' ? 'ALL' : 'ACTIVE')}
+                    style={{
+                      background: approvalFilter === 'ACTIVE' ? '#DCFCE7' : '#FFFFFF',
+                      border: approvalFilter === 'ACTIVE' ? '2px solid #10B981' : '1px solid #E2E8F0',
+                      borderRadius: '12px',
+                      padding: '12px 14px',
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Haz clic para filtrar solo tiendas con membresía activa pagada"
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#166534' }}>⭐ MEMBRESÍAS PAGADAS</span>
+                      <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#15803D' }}>{storePaidCount}</span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: '#14532D', marginTop: '4px', fontWeight: 600 }}>
+                      🟢 Acceso total ($5 BCV al día)
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => setApprovalFilter(approvalFilter === 'BLOCKED' ? 'ALL' : 'BLOCKED')}
+                    style={{
+                      background: approvalFilter === 'BLOCKED' ? '#FEE2E2' : '#FFFFFF',
+                      border: approvalFilter === 'BLOCKED' ? '2px solid #EF4444' : '1px solid #FECACA',
+                      borderRadius: '12px',
+                      padding: '12px 14px',
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Haz clic para filtrar tiendas bloqueadas o que requieren pago para operar"
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#991B1B' }}>🔴 SIN ACCESO (PAGO REQ.)</span>
+                      <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#DC2626' }}>{storeBlockedCount}</span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: '#7F1D1D', marginTop: '4px', fontWeight: 600 }}>
+                      ⚠️ Terminal POS bloqueado (Sin membresía)
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => setApprovalFilter(approvalFilter === 'EXEMPT' ? 'ALL' : 'EXEMPT')}
+                    style={{
+                      background: approvalFilter === 'EXEMPT' ? '#DBEAFE' : '#FFFFFF',
+                      border: approvalFilter === 'EXEMPT' ? '2px solid #3B82F6' : '1px solid #E2E8F0',
+                      borderRadius: '12px',
+                      padding: '12px 14px',
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Haz clic para filtrar tiendas con cortesía o exención"
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#1E40AF' }}>🛡️ EXENTAS (CORTESÍA)</span>
+                      <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#2563EB' }}>{storeExemptCount}</span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: '#1E3A8A', marginTop: '4px', fontWeight: 600 }}>
+                      🟢 Acceso permanente concedido por Admin
+                    </div>
+                  </div>
+
+                  {storePendingPaymentsCount > 0 && (
+                    <div
+                      onClick={() => setApprovalFilter(approvalFilter === 'PAYMENTS' ? 'ALL' : 'PAYMENTS')}
+                      style={{
+                        background: approvalFilter === 'PAYMENTS' ? '#FEF3C7' : '#FFFBEB',
+                        border: '2px solid #F59E0B',
+                        borderRadius: '12px',
+                        padding: '12px 14px',
+                        cursor: 'pointer',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                        transition: 'all 0.15s ease'
+                      }}
+                      title="Haz clic para filtrar tiendas con pagos reportados por validar"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#B45309' }}>⏳ PAGOS POR VALIDAR</span>
+                        <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#D97706' }}>{storePendingPaymentsCount}</span>
+                      </div>
+                      <div style={{ fontSize: '0.68rem', color: '#92400E', marginTop: '4px', fontWeight: 600 }}>
+                        💳 Comprobantes esperando verificación
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div style={{
                   padding: '10px 14px',
                   marginBottom: '14px',
@@ -3107,7 +3267,7 @@ service cloud.firestore {
                       const isPending = st.status === 'PENDIENTE';
                       const isApproved = st.status === 'APROBADO' || !st.status;
                       const isRej = st.status === 'RECHAZADO';
-                      const sub = getStoreSubscriptionDetails(st, config);
+                      const sub = getStoreSubscriptionDetails(st, config, dolarRateInfo);
 
                       return (
                         <div
@@ -3255,22 +3415,55 @@ service cloud.firestore {
                                 </span>
                               )}
 
-                              {/* Estado del Plan $5 */}
-                              {sub.isExempt ? (
-                                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#1E40AF', background: '#DBEAFE', padding: '3px 8px', borderRadius: '6px', border: '1px solid #BFDBFE' }}>
-                                  🛡️ Exento
-                                </span>
-                              ) : sub.isPaidActive ? (
-                                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#15803D', background: '#DCFCE7', padding: '3px 8px', borderRadius: '6px', border: '1px solid #BBF7D0' }}>
-                                  ⭐ Activa Plan $5
-                                </span>
-                              ) : sub.isInTrial ? (
-                                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#92400E', background: '#FEF3C7', padding: '3px 8px', borderRadius: '6px', border: '1px solid #FDE68A' }}>
-                                  🎁 Prueba ({sub.trialDaysRemaining}d)
+                              {/* Indicador de Acceso Operativo al Panel POS */}
+                              {sub.hasAccess ? (
+                                <span style={{
+                                  fontSize: '0.68rem',
+                                  fontWeight: 800,
+                                  color: '#15803D',
+                                  background: '#DCFCE7',
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #BBF7D0',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px'
+                                }} title="Esta tienda tiene acceso COMPLETO para operar su POS">
+                                  🟢 Con Acceso
                                 </span>
                               ) : (
-                                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#991B1B', background: '#FEE2E2', padding: '3px 8px', borderRadius: '6px', border: '1px solid #FECDD3' }}>
-                                  🔒 Vencido
+                                <span style={{
+                                  fontSize: '0.68rem',
+                                  fontWeight: 800,
+                                  color: '#991B1B',
+                                  background: '#FEE2E2',
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #FECDD3',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px'
+                                }} title="Terminal POS bloqueado en modo solo lectura por falta de pago de membresía ($5 BCV)">
+                                  🔴 Sin Acceso (Bloqueado)
+                                </span>
+                              )}
+
+                              {/* Estado Detallado de Membresía / Tiempo de Prueba */}
+                              {sub.isExempt ? (
+                                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#1E40AF', background: '#DBEAFE', padding: '3px 8px', borderRadius: '6px', border: '1px solid #BFDBFE' }} title="Exenta de pago por cortesía del Administrador">
+                                  🛡️ Cortesía Exenta
+                                </span>
+                              ) : sub.isPaidActive ? (
+                                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#15803D', background: '#DCFCE7', padding: '3px 8px', borderRadius: '6px', border: '1px solid #BBF7D0' }} title={`Membresía pagada hasta el ${sub.paidUntil ? sub.paidUntil.toLocaleDateString('es-VE') : 'activo'}`}>
+                                  ⭐ Pagada (hasta {sub.paidUntil ? sub.paidUntil.toLocaleDateString('es-VE') : 'activo'})
+                                </span>
+                              ) : sub.isInTrial ? (
+                                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#92400E', background: '#FEF3C7', padding: '3px 8px', borderRadius: '6px', border: '1px solid #FDE68A' }} title={`Período de prueba activo. Vence el ${sub.trialEndsAt ? sub.trialEndsAt.toLocaleDateString('es-VE') : 'N/A'}`}>
+                                  🎁 Prueba ({sub.trialDaysRemaining}d restantes)
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#991B1B', background: '#FEE2E2', padding: '3px 8px', borderRadius: '6px', border: '1px solid #FECDD3' }} title="No tiene prueba válida ni membresía pagada. Debe cancelar $5 BCV para desbloquear su POS">
+                                  🔒 Pago Requerido ($5)
                                 </span>
                               )}
 
@@ -3518,50 +3711,188 @@ service cloud.firestore {
                                     </div>
                                   </div>
 
-                                  {/* Membresía Plan $5 BCV */}
-                                  <div style={{ borderTop: '1px dashed #E2E8F0', paddingTop: '8px' }}>
-                                    <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase' }}>
-                                      Membresía fidely CLUB ($5 BCV)
+                                  {/* Membresía fidely CLUB & Acceso al Panel */}
+                                  <div style={{ borderTop: '1px dashed #E2E8F0', paddingTop: '10px' }}>
+                                    <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>
+                                      Membresía fidely CLUB & Acceso al Panel
                                     </div>
                                     <div style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'space-between',
-                                      gap: '8px',
-                                      marginTop: '4px',
-                                      background: '#F8FAFC',
-                                      padding: '8px 12px',
-                                      borderRadius: '8px',
-                                      border: '1px solid #E2E8F0'
+                                      background: sub.isBlocked ? '#FEF2F2' : '#F0FDF4',
+                                      border: `1.5px solid ${sub.isBlocked ? '#FECACA' : '#BBF7D0'}`,
+                                      borderRadius: '10px',
+                                      padding: '10px 12px',
+                                      marginBottom: '8px'
                                     }}>
-                                      <div>
-                                        <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                                          {sub.isExempt ? 'Membresía Exenta (Cortesía)' : sub.isPaidActive ? 'Plan $5 BCV Activo' : sub.isInTrial ? `Periodo de Prueba (${sub.trialDaysRemaining} días restantes)` : 'Membresía Vencida'}
-                                        </div>
-                                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-                                          {sub.planLabel || 'Acceso completo a la red y terminal POS'}
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <span style={{ fontSize: '1rem' }}>{sub.hasAccess ? '🟢' : '🔴'}</span>
+                                          <div>
+                                            <div style={{ fontSize: '0.80rem', fontWeight: 900, color: sub.hasAccess ? '#166534' : '#991B1B' }}>
+                                              {sub.hasAccess ? 'Acceso Operativo al Panel Habilitado' : 'Acceso Operativo Bloqueado (Falta de Pago)'}
+                                            </div>
+                                            <div style={{ fontSize: '0.70rem', color: sub.hasAccess ? '#15803D' : '#B91C1C' }}>
+                                              {sub.isExempt
+                                                ? 'Membresía Exenta de Cortesía Permanente (Acceso Ilimitado)'
+                                                : sub.isPaidActive
+                                                ? `Membresía Pagada y Activa hasta el ${sub.paidUntil ? sub.paidUntil.toLocaleDateString('es-VE') : 'activo'}`
+                                                : sub.isInTrial
+                                                ? `Período de Prueba Gratuito: Quedan ${sub.trialDaysRemaining} días (Vence el ${sub.trialEndsAt ? sub.trialEndsAt.toLocaleDateString('es-VE') : 'N/A'})`
+                                                : 'El comercio no ha cancelado la membresía mensual de $5 BCV. Puede ver el panel pero no emitir sellos ni cashback.'}
+                                            </div>
+                                          </div>
                                         </div>
                                       </div>
+
+                                      {/* Fechas detalladas */}
+                                      <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                                        gap: '6px',
+                                        marginTop: '8px',
+                                        paddingTop: '8px',
+                                        borderTop: `1px dashed ${sub.isBlocked ? '#FECACA' : '#BBF7D0'}`,
+                                        fontSize: '0.72rem',
+                                        color: 'var(--text-main)'
+                                      }}>
+                                        <div>📅 <strong>Registro:</strong> {sub.createdAt ? sub.createdAt.toLocaleDateString('es-VE') : 'N/A'}</div>
+                                        <div>
+                                          ⏳ <strong>Prueba Asignada:</strong> {sub.trialEndsAt ? sub.trialEndsAt.toLocaleDateString('es-VE') : 'N/A'}
+                                          {sub.isInTrial && <span style={{ color: '#B45309', fontWeight: 800 }}> ({sub.trialDaysRemaining}d restantes)</span>}
+                                        </div>
+                                        {sub.paidUntil && (
+                                          <div>⭐ <strong>Pagado hasta:</strong> {sub.paidUntil.toLocaleDateString('es-VE')}</div>
+                                        )}
+                                      </div>
+
+                                      {/* Comprobante reportado si existe */}
+                                      {st.pendingSubscriptionPayment && (
+                                        <div style={{
+                                          marginTop: '8px',
+                                          background: '#FFFBEB',
+                                          border: '1px solid #FCD34D',
+                                          borderRadius: '8px',
+                                          padding: '8px 10px',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          flexWrap: 'wrap',
+                                          gap: '6px'
+                                        }}>
+                                          <div style={{ fontSize: '0.74rem', color: '#92400E' }}>
+                                            💳 <strong>Pago Reportado:</strong> Ref: <code>{st.pendingSubscriptionPayment.reference}</code> | Bs. {st.pendingSubscriptionPayment.amountVes}
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => setSubscriptionStore(st)}
+                                            style={{
+                                              padding: '3px 8px',
+                                              fontSize: '0.70rem',
+                                              fontWeight: 800,
+                                              background: '#D97706',
+                                              color: '#FFFFFF',
+                                              border: 'none',
+                                              borderRadius: '6px',
+                                              cursor: 'pointer'
+                                            }}
+                                          >
+                                            Verificar & Aprobar
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Botones de acción rápida de membresía */}
+                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                       <button
                                         type="button"
                                         onClick={() => setSubscriptionStore(st)}
-                                        className="btn btn-primary"
+                                        className="btn btn-secondary"
+                                        style={{ padding: '4px 8px', fontSize: '0.70rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                        title="Abrir panel completo de membresía para este comercio"
+                                      >
+                                        <CreditCard size={11} />
+                                        <span>Gestionar Plan</span>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleExtendStoreSubscription(1, st)}
                                         style={{
-                                          padding: '5px 10px',
-                                          fontSize: '0.72rem',
+                                          padding: '4px 8px',
+                                          fontSize: '0.70rem',
+                                          fontWeight: 800,
+                                          background: '#16A34A',
+                                          color: '#FFFFFF',
+                                          border: 'none',
+                                          borderRadius: '6px',
+                                          cursor: 'pointer',
                                           display: 'inline-flex',
                                           alignItems: 'center',
-                                          gap: '4px',
-                                          fontWeight: 800,
-                                          whiteSpace: 'nowrap',
-                                          background: st.pendingSubscriptionPayment ? '#D97706' : undefined,
-                                          borderColor: st.pendingSubscriptionPayment ? '#B45309' : undefined
+                                          gap: '4px'
                                         }}
-                                        title={st.pendingSubscriptionPayment ? '¡Tiene un comprobante de Pago Móvil reportado esperando verificación!' : 'Gestionar pagos, reportes BCV y exoneraciones'}
+                                        title="Activar o extender 1 mes ($5) de membresía pagada"
                                       >
-                                        <CreditCard size={12} />
-                                        <span>{st.pendingSubscriptionPayment ? '🔔 Validar Pago' : 'Gestionar Plan'}</span>
+                                        <span>+1 Mes Pagado</span>
                                       </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleExtendStoreTrial(30, st)}
+                                        style={{
+                                          padding: '4px 8px',
+                                          fontSize: '0.70rem',
+                                          fontWeight: 800,
+                                          background: '#F59E0B',
+                                          color: '#FFFFFF',
+                                          border: 'none',
+                                          borderRadius: '6px',
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}
+                                        title="Extender 30 días adicionales de prueba gratuita"
+                                      >
+                                        <span>+30 Días Prueba</span>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleStoreExemption(st)}
+                                        style={{
+                                          padding: '4px 8px',
+                                          fontSize: '0.70rem',
+                                          fontWeight: 700,
+                                          background: st.subscriptionExempt ? '#EFF6FF' : '#F8FAFC',
+                                          color: st.subscriptionExempt ? '#2563EB' : 'var(--text-main)',
+                                          border: st.subscriptionExempt ? '1px solid #93C5FD' : '1px solid #CBD5E1',
+                                          borderRadius: '6px',
+                                          cursor: 'pointer'
+                                        }}
+                                        title={st.subscriptionExempt ? 'Revocar cortesía gratuita' : 'Conceder exención de pago permanente (Cortesía)'}
+                                      >
+                                        <span>{st.subscriptionExempt ? 'Revocar Cortesía' : 'Exentar (Cortesía)'}</span>
+                                      </button>
+
+                                      {sub.hasAccess && !sub.isExempt && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleBlockStoreSubscription(st)}
+                                          style={{
+                                            padding: '4px 8px',
+                                            fontSize: '0.70rem',
+                                            fontWeight: 700,
+                                            background: '#FEF2F2',
+                                            color: '#DC2626',
+                                            border: '1px solid #FECACA',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer'
+                                          }}
+                                          title="Bloquear terminal por falta de pago"
+                                        >
+                                          <span>Bloquear POS</span>
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
@@ -6525,7 +6856,7 @@ service cloud.firestore {
 
             {/* Info Resumen de Suscripción */}
             {(() => {
-              const sub = getStoreSubscriptionDetails(subscriptionStore, config);
+              const sub = getStoreSubscriptionDetails(subscriptionStore, config, dolarRateInfo);
               return (
                 <div>
                   <div style={{
@@ -6560,7 +6891,17 @@ service cloud.firestore {
 
                     <div style={{ fontSize: '0.76rem', color: '#475569', lineHeight: 1.5 }}>
                       <div>📅 <strong>Registro:</strong> {sub.createdAt ? sub.createdAt.toLocaleDateString('es-VE') : 'N/A'}</div>
-                      <div>⏳ <strong>Fin de prueba (3 meses):</strong> {sub.trialEndsAt ? sub.trialEndsAt.toLocaleDateString('es-VE') : 'N/A'}</div>
+                      <div>
+                        ⏳ <strong>Fin de Prueba Asignada:</strong> {sub.trialEndsAt ? sub.trialEndsAt.toLocaleDateString('es-VE') : 'N/A'}
+                        {sub.isInTrial && <span style={{ color: '#B45309', fontWeight: 800 }}> ({sub.trialDaysRemaining} días restantes)</span>}
+                      </div>
+                      <div>
+                        🔑 <strong>Acceso al Terminal POS:</strong> {sub.hasAccess ? (
+                          <span style={{ color: '#166534', fontWeight: 800 }}>🟢 Habilitado (Operativo)</span>
+                        ) : (
+                          <span style={{ color: '#991B1B', fontWeight: 800 }}>🔴 Bloqueado (Requiere Membresía $5 BCV)</span>
+                        )}
+                      </div>
                       {sub.paidUntil && (
                         <div>⭐ <strong>Pagado hasta:</strong> {sub.paidUntil.toLocaleDateString('es-VE')}</div>
                       )}
