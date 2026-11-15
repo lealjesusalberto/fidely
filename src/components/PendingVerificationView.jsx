@@ -58,7 +58,11 @@ export default function PendingVerificationView({
           setCheckMessage('Tu comercio continúa en lista de espera de verificación por el Administrador.');
         }
       } else {
-        const found = clients.find(c => c.id === data.id || c.docId === data.docId);
+        const found = clients.find(c => 
+          c.id === data.id || 
+          (data.firebaseUid && c.firebaseUid === data.firebaseUid) ||
+          (data.email && c.email?.toLowerCase().trim() === data.email.toLowerCase().trim())
+        );
         if (found && (found.status === 'APROBADO' || found.status === 'ACTIVO')) {
           setCheckMessage('¡Tu cuenta ha sido APROBADA! Ingresando a tu portal...');
           if (onProceed) onProceed(found);

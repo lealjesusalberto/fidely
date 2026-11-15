@@ -606,19 +606,29 @@ export default function LoginView({
       // 3. ¿Es Cliente registrado (por formulario normal o por QR de tienda previo)?
       let matchedClient = clients.find(c =>
         c.id === authUser.uid ||
-        c.firebaseUid === authUser.uid ||
-        c.email?.toLowerCase().trim() === cleanEmail
+        c.firebaseUid === authUser.uid
       );
 
       if (!matchedClient) {
+        try {
+          matchedClient = await getClientById(authUser.uid);
+        } catch (e) { }
+      }
+
+      if (!matchedClient && cleanEmail) {
+        matchedClient = clients.find(c => c.email?.toLowerCase().trim() === cleanEmail);
+      }
+
+      if (!matchedClient && cleanEmail) {
         try {
           matchedClient = await getClientByEmail(cleanEmail);
         } catch (e) { }
       }
 
-      if (!matchedClient) {
+      if (matchedClient && (!matchedClient.firebaseUid || matchedClient.firebaseUid !== authUser.uid)) {
         try {
-          matchedClient = await getClientById(authUser.uid);
+          await saveClient({ ...matchedClient, firebaseUid: authUser.uid });
+          matchedClient = { ...matchedClient, firebaseUid: authUser.uid };
         } catch (e) { }
       }
 
@@ -868,27 +878,30 @@ export default function LoginView({
           return;
         }
 
-        // C. Verificación de Socio Cliente en Firestore
+        // C. Verificación de Socio Cliente en Firestore (estricta por UID primero)
         let matchedClientByEmail = clients.find(c =>
           c.id === authUser.uid ||
-          c.firebaseUid === authUser.uid ||
-          c.email?.toLowerCase().trim() === cleanId
+          c.firebaseUid === authUser.uid
         );
-
-        if (!matchedClientByEmail) {
-          try {
-            const fetchedByEmail = await getClientByEmail(cleanId);
-            if (fetchedByEmail) {
-              matchedClientByEmail = fetchedByEmail;
-            }
-          } catch (e) { }
-        }
 
         if (!matchedClientByEmail) {
           try {
             const fetched = await getClientById(authUser.uid);
             if (fetched) {
               matchedClientByEmail = fetched;
+            }
+          } catch (e) { }
+        }
+
+        if (!matchedClientByEmail && cleanId) {
+          matchedClientByEmail = clients.find(c => c.email?.toLowerCase().trim() === cleanId);
+        }
+
+        if (!matchedClientByEmail && cleanId) {
+          try {
+            const fetchedByEmail = await getClientByEmail(cleanId);
+            if (fetchedByEmail) {
+              matchedClientByEmail = fetchedByEmail;
             }
           } catch (e) { }
         }

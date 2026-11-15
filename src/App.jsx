@@ -188,7 +188,12 @@ export default function App() {
     }
     return stores[0] || null;
   });
-  const [selectedClient, setSelectedClient] = useState(clients[0]);
+  const [selectedClient, setSelectedClient] = useState(() => {
+    if (currentUser?.role === 'CLIENT' && currentUser?.client) {
+      return currentUser.client;
+    }
+    return null;
+  });
 
   // Toast notification state
   const [toast, setToast] = useState(null);
@@ -258,21 +263,27 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('fidely_clients', JSON.stringify(clients));
     if (currentUser?.role === 'CLIENT' && currentUser?.client) {
-      const cleanDoc = currentUser.client?.docId?.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
-      const updated = clients.find(c => 
-        (c.id === currentUser.client.id) ||
-        (cleanDoc && c.docId?.replace(/[^A-Za-z0-9]/g, '').toLowerCase() === cleanDoc) ||
-        (c.email && c.email.toLowerCase() === currentUser.client.email?.toLowerCase())
-      );
+      // Prioridad 1: Vincular estrictamente por ID único o UID de Firebase
+      const targetUid = currentUser.client?.id || currentUser.client?.firebaseUid || currentUser.uid || currentUser.id;
+      const targetEmail = (currentUser.email || currentUser.client?.email || '').toLowerCase().trim();
+
+      let updated = null;
+      if (targetUid) {
+        updated = clients.find(c => c.id === targetUid || c.firebaseUid === targetUid);
+      }
+      // Prioridad 2: Si no tiene UID (cuentas legacy sin id asignado), buscar por correo exacto
+      if (!updated && targetEmail) {
+        updated = clients.find(c => (c.email || '').toLowerCase().trim() === targetEmail);
+      }
+
+      // NUNCA buscar por cédula (docId) ni fallbackear a clients[0]: dos clientes con igual cédula o datos de prueba jamás deben cruzarse
       if (updated) {
         setSelectedClient(updated);
         setCurrentUser(prev => prev ? { ...prev, client: updated } : prev);
       }
     } else if (selectedClient) {
-      const updated = clients.find(c => c.id === selectedClient.id);
+      const updated = clients.find(c => c.id === selectedClient.id || (selectedClient.firebaseUid && c.firebaseUid === selectedClient.firebaseUid));
       if (updated) setSelectedClient(updated);
-    } else if (clients.length > 0) {
-      setSelectedClient(clients[0]);
     }
   }, [clients]);
 
@@ -774,6 +785,7 @@ export default function App() {
   const handleLogout = () => {
     logoutFromFirebase().catch(() => {});
     setCurrentUser(null);
+    setSelectedClient(null);
     setCurrentRole('LANDING');
     localStorage.removeItem('fidely_user');
     localStorage.removeItem('cerca_user');
@@ -790,7 +802,7 @@ export default function App() {
       setPurchases(INITIAL_PURCHASES);
       setMovements(INITIAL_MOVEMENTS);
       setRedemptions(INITIAL_REDEMPTIONS);
-      setSelectedClient(INITIAL_CLIENTS[0]);
+      setSelectedClient(null);
       setCurrentUser(null);
       setCurrentRole('LANDING');
       localStorage.clear();
