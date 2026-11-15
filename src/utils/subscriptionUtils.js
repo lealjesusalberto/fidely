@@ -65,17 +65,21 @@ export function getStoreSubscriptionDetails(store, config = {}, dolarRateInfo = 
   const createdAtDate = parseDateSafe(store.createdAt || store.registeredAt) || now;
 
   // 2. Fecha Límite de Prueba Gratuita:
-  // Si la tienda ya tiene una fecha trialEndsAt guardada (asignada al momento de su registro o ajustada por el admin),
-  // esa fecha DEBE RESPETARSE SIEMPRE, garantizando que cambios en la configuración global de prueba
-  // apliquen ÚNICAMENTE a los nuevos comercios que se registren a partir de ese momento.
-  // Si no tiene trialEndsAt explícito guardado (tiendas antiguas creadas antes del campo),
-  // se respetan los 3 meses (90 días) originales con los que iniciaron las tiendas del sistema.
+  // Si la tienda ya tiene una fecha trialEndsAt guardada:
+  // DETECCIÓN Y PROTECCIÓN DE TIENDAS AFECTADAS (0 días de prueba):
+  // Si trialEndsAt es nula, o si es igual/anterior a su fecha de registro (diferencia menor a 24h),
+  // significa que la tienda se registró en un momento en que el sistema tenía el período de prueba en 0 meses,
+  // provocando un bloqueo prematuro involuntario.
+  // En ese caso, garantizamos que toda tienda existente disfrute de su mes de cortesía (30 días desde su registro)
+  // o sus 3 meses (90 días) si fue registrada bajo esa modalidad o si la plataforma está configurada a 3 meses.
   let trialEndsAtDate = parseDateSafe(store.trialEndsAt);
-  if (!trialEndsAtDate) {
-    const storeTrialMonths = store.trialMonths !== undefined
+  const isZeroDayOrMissingTrial = !trialEndsAtDate || (trialEndsAtDate.getTime() - createdAtDate.getTime() < 24 * 60 * 60 * 1000);
+
+  if (isZeroDayOrMissingTrial && !store.customTrialEndsAt) {
+    const storeTrialMonths = (store.trialMonths !== undefined && store.trialMonths > 0)
       ? parseInt(store.trialMonths, 10)
-      : (configuredTrialMonths > 0 ? configuredTrialMonths : 3);
-    const storeTrialDays = Math.max(0, storeTrialMonths * 30);
+      : (configuredTrialMonths > 0 ? configuredTrialMonths : 1);
+    const storeTrialDays = Math.max(30, storeTrialMonths * 30);
     trialEndsAtDate = new Date(createdAtDate.getTime() + (storeTrialDays * 24 * 60 * 60 * 1000));
   }
 

@@ -637,6 +637,7 @@ export default function AdminPanelView({
       subscriptionPaidUntil: pastDate,
       subscriptionStatus: 'BLOCKED',
       subscriptionExempt: false,
+      customTrialEndsAt: true,
       updatedAt: now.toISOString()
     };
 
