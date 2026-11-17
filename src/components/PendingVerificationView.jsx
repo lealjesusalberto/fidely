@@ -274,55 +274,6 @@ export default function PendingVerificationView({
           </div>
         </div>
 
-        {/* 1. BANNER DE CONDICIONES DE MEMBRESÍA (Para Tiendas) */}
-        {isStore && !isRejected && (
-          (config?.storeTrialMonths ?? 3) > 0 ? (
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(22, 163, 74, 0.09) 0%, rgba(34, 197, 94, 0.04) 100%)',
-              border: '1.5px solid #BBF7D0',
-              borderRadius: '16px',
-              padding: '14px 16px',
-              marginBottom: '18px',
-              textAlign: 'left',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <span style={{ fontSize: '1.6rem', flexShrink: 0 }}>🎁</span>
-              <div>
-                <div style={{ fontSize: '0.86rem', fontWeight: 900, color: '#166534' }}>
-                  Período de Prueba Gratis Incluido ({(config?.storeTrialMonths ?? 3) * 30} días)
-                </div>
-                <div style={{ fontSize: '0.74rem', color: '#15803D', marginTop: '2px', lineHeight: 1.4 }}>
-                  Al ser activada tu cuenta, dispondrás de {(config?.storeTrialMonths ?? 3) === 1 ? '1 mes completo' : `${config?.storeTrialMonths ?? 3} meses`} de cortesía para usar el terminal POS, emitir sellos y fidelizar a tus clientes sin costo alguno.
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div style={{
-              background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
-              border: '1.5px solid #FCD34D',
-              borderRadius: '16px',
-              padding: '14px 16px',
-              marginBottom: '18px',
-              textAlign: 'left',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <span style={{ fontSize: '1.6rem', flexShrink: 0 }}>💳</span>
-              <div>
-                <div style={{ fontSize: '0.86rem', fontWeight: 900, color: '#92400E' }}>
-                  Modalidad de Membresía Directa ($5 BCV)
-                </div>
-                <div style={{ fontSize: '0.74rem', color: '#78350F', marginTop: '2px', lineHeight: 1.4 }}>
-                  Al ser aprobada tu cuenta, podrás explorar tu terminal POS y activar tu membresía básica mensual para emitir sellos y facturar a tus clientes.
-                </div>
-              </div>
-            </div>
-          )
-        )}
-
         {/* 2. VISTA PREVIA VISUAL DE LA TARJETA DIGITAL DE LA TIENDA */}
         {isStore && (
           <div style={{
