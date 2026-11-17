@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Clock,
   ShieldCheck,
@@ -13,7 +13,10 @@ import {
   MapPin,
   Mail,
   ChevronRight,
-  CreditCard
+  CreditCard,
+  MessageCircle,
+  ExternalLink,
+  Star
 } from 'lucide-react';
 import StoreOnboardingModal from './StoreOnboardingModal';
 import StoreLogoBadge from './StoreLogoBadge';
@@ -40,6 +43,46 @@ export default function PendingVerificationView({
   const category = data?.category || 'Comercio General';
   const status = data?.status || 'PENDIENTE';
   const isRejected = status === 'RECHAZADO';
+
+  // Auto-verificación reactiva en tiempo real: si el admin aprueba desde su panel, ingresar inmediatamente
+  useEffect(() => {
+    if (isStore && data?.id) {
+      const found = stores.find(s => s.id === data.id || s.email?.toLowerCase() === data.email?.toLowerCase());
+      if (found && (found.status === 'APROBADO' || found.status === 'ACTIVO' || !found.status)) {
+        setCheckMessage('¡Tu tienda ha sido APROBADA! Ingresando a tu terminal POS...');
+        const timer = setTimeout(() => {
+          if (onProceed) onProceed(found);
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+    } else if (!isStore && (data?.id || data?.email)) {
+      const found = clients.find(c => 
+        c.id === data.id || 
+        (data.firebaseUid && c.firebaseUid === data.firebaseUid) ||
+        (data.email && c.email?.toLowerCase().trim() === data.email.toLowerCase().trim())
+      );
+      if (found && (found.status === 'APROBADO' || found.status === 'ACTIVO')) {
+        setCheckMessage('¡Tu cuenta ha sido APROBADA! Ingresando a tu portal...');
+        const timer = setTimeout(() => {
+          if (onProceed) onProceed(found);
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [stores, clients, data, isStore, onProceed]);
+
+  // Enlace directo a WhatsApp del Administrador con mensaje prellenado
+  const adminWhatsAppNumber = String(
+    config?.supportWhatsapp || 
+    config?.subscriptionPagoMovilPhone || 
+    '584242098250'
+  ).replace(/[^0-9]/g, '');
+
+  const whatsAppMessage = encodeURIComponent(
+    `Hola equipo de fidely CLUB 👋 Acabo de registrar mi tienda "${name}" (${data?.id || 'Nuevo'}). Por favor, ¿podrían verificar y activar mi acceso?`
+  );
+
+  const whatsAppUrl = `https://wa.me/${adminWhatsAppNumber}?text=${whatsAppMessage}`;
 
   const handleCheckStatus = () => {
     setIsChecking(true);
@@ -230,6 +273,132 @@ export default function PendingVerificationView({
             </div>
           </div>
         </div>
+
+        {/* 1. BANNER DE PRUEBA GRATIS ASEGURADA (Para Tiendas) */}
+        {isStore && !isRejected && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(22, 163, 74, 0.09) 0%, rgba(34, 197, 94, 0.04) 100%)',
+            border: '1.5px solid #BBF7D0',
+            borderRadius: '16px',
+            padding: '14px 16px',
+            marginBottom: '18px',
+            textAlign: 'left',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <span style={{ fontSize: '1.6rem', flexShrink: 0 }}>🎁</span>
+            <div>
+              <div style={{ fontSize: '0.86rem', fontWeight: 900, color: '#166534' }}>
+                Período de Prueba Gratis Incluido (30 días)
+              </div>
+              <div style={{ fontSize: '0.74rem', color: '#15803D', marginTop: '2px', lineHeight: 1.4 }}>
+                Al ser activada tu cuenta, dispondrás de 1 mes completo de cortesía para usar el terminal POS, emitir sellos y fidelizar a tus clientes sin costo alguno.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 2. VISTA PREVIA VISUAL DE LA TARJETA DIGITAL DE LA TIENDA */}
+        {isStore && (
+          <div style={{
+            background: data?.cardGradient || (data?.cardColor ? `linear-gradient(135deg, ${data.cardColor} 0%, #000000 100%)` : 'linear-gradient(135deg, #18181B 0%, #27272A 100%)'),
+            borderRadius: '16px',
+            padding: '16px 18px',
+            color: '#FFFFFF',
+            textAlign: 'left',
+            marginBottom: '18px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.14)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <StoreLogoBadge store={data} size={32} borderRadius="8px" />
+                <div>
+                  <div style={{ fontSize: '0.86rem', fontWeight: 900, color: '#FFFFFF', lineHeight: 1.2 }}>{name}</div>
+                  <div style={{ fontSize: '0.66rem', opacity: 0.8, textTransform: 'uppercase' }}>{category}</div>
+                </div>
+              </div>
+              <span style={{
+                fontSize: '0.65rem',
+                fontWeight: 800,
+                background: 'rgba(255,255,255,0.2)',
+                padding: '2px 8px',
+                borderRadius: '6px',
+                border: '1px solid rgba(255,255,255,0.3)'
+              }}>
+                Tarjeta Digital Oficial
+              </span>
+            </div>
+
+            {/* Sellos de Muestra */}
+            <div style={{
+              display: 'flex',
+              gap: '6px',
+              justifyContent: 'space-between',
+              background: 'rgba(0,0,0,0.25)',
+              padding: '8px 10px',
+              borderRadius: '10px',
+              marginBottom: '10px'
+            }}>
+              {Array.from({ length: Math.min(6, data?.stampsTarget || 6) }).map((_, idx) => (
+                <div key={idx} style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: idx === 0 ? '2px solid #F59E0B' : '1.5px dashed rgba(255,255,255,0.4)',
+                  background: idx === 0 ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.70rem',
+                  fontWeight: 800,
+                  color: idx === 0 ? '#FCD34D' : 'rgba(255,255,255,0.6)'
+                }}>
+                  {idx === 0 ? '★' : idx + 1}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ fontSize: '0.72rem', opacity: 0.9 }}>
+              🎯 <strong>Premio al completar:</strong> {data?.rewardTitle || 'Corte o Servicio de Fidelidad'}
+            </div>
+          </div>
+        )}
+
+        {/* 3. BOTÓN DIRECTO DE WHATSAPP PARA ACTIVACIÓN RÁPIDA */}
+        {isStore && !isRejected && (
+          <div style={{ marginBottom: '20px' }}>
+            <a
+              href={whatsAppUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                width: '100%',
+                padding: '12px 18px',
+                borderRadius: '12px',
+                background: '#16A34A',
+                color: '#FFFFFF',
+                fontWeight: 800,
+                fontSize: '0.88rem',
+                textDecoration: 'none',
+                boxShadow: '0 4px 14px rgba(22, 163, 74, 0.3)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <MessageCircle size={18} />
+              <span>💬 Solicitar Activación Inmediata por WhatsApp</span>
+            </a>
+            <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', marginTop: '5px' }}>
+              Comunícate con soporte para agilizar tu activación en minutos.
+            </div>
+          </div>
+        )}
 
         {/* ONBOARDING EXPLORATION BANNER (For Stores) */}
         {isStore && (

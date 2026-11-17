@@ -149,6 +149,36 @@ export default function POSView({
       return false;
     }
   });
+
+  // Estado del Checklist de Primeros Pasos del Comercio (Setup Wizard)
+  const [showSetupChecklist, setShowSetupChecklist] = useState(() => {
+    try {
+      const storeObj = propSelectedStore || stores[0];
+      return localStorage.getItem(`fidely_hide_setup_checklist_${storeObj?.id}`) !== 'true';
+    } catch (e) {
+      return true;
+    }
+  });
+
+  const [hasDownloadedQr, setHasDownloadedQr] = useState(() => {
+    try {
+      const storeObj = propSelectedStore || stores[0];
+      return localStorage.getItem(`fidely_qr_printed_${storeObj?.id}`) === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    if (activeTab === 'QR_DISPLAY' && (propSelectedStore?.id || stores[0]?.id)) {
+      const storeId = propSelectedStore?.id || stores[0]?.id;
+      setHasDownloadedQr(true);
+      try {
+        localStorage.setItem(`fidely_qr_printed_${storeId}`, 'true');
+      } catch (e) {}
+    }
+  }, [activeTab, propSelectedStore?.id, stores]);
+
   const [shiftSearchQuery, setShiftSearchQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [identifiedClient, setIdentifiedClient] = useState(null);
@@ -296,6 +326,16 @@ export default function POSView({
     Array.isArray(currentStoreObj?.stampRewards) &&
     currentStoreObj.stampRewards.length > 0
   );
+
+  // Detalles de membresía de la tienda actual
+  const storeSubDetails = getStoreSubscriptionDetails(currentStoreObj, config, dolarRateInfo);
+
+  // Contador de pasos completados en el Checklist de Primeros Pasos del Comercio
+  const completedStepsCount = [
+    isCardConfigured,
+    hasDownloadedQr,
+    Boolean((purchases || []).some(p => p.storeId === currentStoreObj?.id || p.storeId === safeStore?.id))
+  ].filter(Boolean).length;
 
   // Monto mínimo de compra para generar sello definido por la tienda (o fallback config)
   const storeMinPurchase = parseFloat(
@@ -3802,6 +3842,284 @@ export default function POSView({
 
         {/* Workspace Body Area */}
         <div className="pos-workspace-content">
+
+          {/* CHECKLIST DE PRIMEROS PASOS DEL COMERCIO (ONBOARDING INTERACTIVO) */}
+          {showSetupChecklist && !isSubscriptionBlocked && activeTab !== 'MEMBERSHIP' && (
+            <div style={{
+              background: '#FFFFFF',
+              border: '1.5px solid #EAE3D9',
+              borderRadius: '18px',
+              padding: '16px 20px',
+              marginBottom: '20px',
+              boxShadow: '0 4px 18px rgba(0,0,0,0.04)',
+              position: 'relative'
+            }}>
+              {/* Header con Barra de Progreso y Acciones */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    background: completedStepsCount === 3 ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' : 'linear-gradient(135deg, var(--c-primary) 0%, #70092B 100%)',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 900,
+                    fontSize: '1.1rem',
+                    flexShrink: 0
+                  }}>
+                    {completedStepsCount === 3 ? '🎉' : '🚀'}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.92rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>Primeros Pasos de tu Tienda</span>
+                      <span style={{
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        background: completedStepsCount === 3 ? '#DCFCE7' : 'rgba(222, 139, 118, 0.14)',
+                        color: completedStepsCount === 3 ? '#166534' : 'var(--c-primary)',
+                        padding: '2px 8px',
+                        borderRadius: '9999px',
+                        border: `1px solid ${completedStepsCount === 3 ? '#86EFAC' : 'rgba(222, 139, 118, 0.3)'}`
+                      }}>
+                        {completedStepsCount} de 3 completados
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      {storeSubDetails.isInTrial
+                        ? `🎁 Tienes ${storeSubDetails.trialDaysRemaining} días de prueba gratuita activa (hasta el ${storeSubDetails.trialEndsAt ? storeSubDetails.trialEndsAt.toLocaleDateString('es-VE') : 'activo'}). Sigue estos 3 pasos para activar a tus clientes:`
+                        : 'Sigue estos 3 pasos esenciales para activar la fidelización en tu mostrador:'}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowStoreOnboarding(true)}
+                    style={{
+                      padding: '5px 10px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      background: '#FAF8F5',
+                      border: '1px solid #EAE3D9',
+                      borderRadius: '8px',
+                      color: 'var(--text-main)',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                    title="Ver guía interactiva de bienvenida"
+                  >
+                    <span>✨ Ver Guía</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSetupChecklist(false);
+                      try {
+                        localStorage.setItem(`fidely_hide_setup_checklist_${currentStoreObj?.id}`, 'true');
+                      } catch (e) {}
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      fontSize: '0.82rem',
+                      padding: '4px 8px',
+                      borderRadius: '6px'
+                    }}
+                    title="Ocultar checklist de primeros pasos"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* Barra de progreso visual */}
+              <div style={{ height: '6px', background: '#F1F5F9', borderRadius: '9999px', overflow: 'hidden', marginBottom: '14px' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${(completedStepsCount / 3) * 100}%`,
+                  background: completedStepsCount === 3
+                    ? 'linear-gradient(90deg, #10B981 0%, #059669 100%)'
+                    : 'linear-gradient(90deg, var(--c-primary) 0%, #9C382A 100%)',
+                  transition: 'width 0.4s ease'
+                }} />
+              </div>
+
+              {/* 3 Pasos en Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '10px' }}>
+                
+                {/* Paso 1: Configurar Tarjeta */}
+                <div style={{
+                  background: isCardConfigured ? '#F0FDF4' : '#FAF8F5',
+                  border: `1.5px solid ${isCardConfigured ? '#BBF7D0' : '#EAE3D9'}`,
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '8px'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 800, color: isCardConfigured ? '#166534' : 'var(--text-muted)' }}>
+                        PASO 1
+                      </span>
+                      {isCardConfigured ? (
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#166534' }}>
+                          ✓ Listo
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#D97706' }}>
+                          Pendiente
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.25 }}>
+                      Personaliza tu Tarjeta
+                    </div>
+                    <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Colores de marca, ícono del sello y meta de visitas.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowStoreProfileModal(true)}
+                    style={{
+                      width: '100%',
+                      padding: '6px 10px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: isCardConfigured ? '#DCFCE7' : 'var(--c-primary)',
+                      color: isCardConfigured ? '#166534' : '#FFFFFF',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isCardConfigured ? 'Editar Tarjeta' : '🎨 Diseñar Tarjeta Ahora'}
+                  </button>
+                </div>
+
+                {/* Paso 2: Imprimir QR */}
+                <div style={{
+                  background: hasDownloadedQr ? '#F0FDF4' : '#FAF8F5',
+                  border: `1.5px solid ${hasDownloadedQr ? '#BBF7D0' : '#EAE3D9'}`,
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '8px'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 800, color: hasDownloadedQr ? '#166534' : 'var(--text-muted)' }}>
+                        PASO 2
+                      </span>
+                      {hasDownloadedQr ? (
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#166534' }}>
+                          ✓ Listo
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#D97706' }}>
+                          Pendiente
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.25 }}>
+                      Código QR de Mostrador
+                    </div>
+                    <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Exhibe tu QR para que los clientes lo escaneen al pagar.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('QR_DISPLAY');
+                      setHasDownloadedQr(true);
+                      try {
+                        localStorage.setItem(`fidely_qr_printed_${currentStoreObj?.id}`, 'true');
+                      } catch (e) {}
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '6px 10px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: hasDownloadedQr ? '#DCFCE7' : '#0F766E',
+                      color: hasDownloadedQr ? '#166534' : '#FFFFFF',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {hasDownloadedQr ? 'Ver QR Mostrador' : '🖨️ Ver / Imprimir Cartel'}
+                  </button>
+                </div>
+
+                {/* Paso 3: Primera Venta */}
+                <div style={{
+                  background: (purchases || []).some(p => p.storeId === currentStoreObj?.id) ? '#F0FDF4' : '#FAF8F5',
+                  border: `1.5px solid ${(purchases || []).some(p => p.storeId === currentStoreObj?.id) ? '#BBF7D0' : '#EAE3D9'}`,
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '8px'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 800, color: (purchases || []).some(p => p.storeId === currentStoreObj?.id) ? '#166534' : 'var(--text-muted)' }}>
+                        PASO 3
+                      </span>
+                      {(purchases || []).some(p => p.storeId === currentStoreObj?.id) ? (
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#166534' }}>
+                          ✓ Listo
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#D97706' }}>
+                          Pendiente
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.25 }}>
+                      Emite tu Primer Sello
+                    </div>
+                    <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Haz una prueba cobrando o registrando a un cliente en caja.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('REGISTER_SALE')}
+                    style={{
+                      width: '100%',
+                      padding: '6px 10px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: (purchases || []).some(p => p.storeId === currentStoreObj?.id) ? '#DCFCE7' : '#70092B',
+                      color: (purchases || []).some(p => p.storeId === currentStoreObj?.id) ? '#166534' : '#FFFFFF',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {(purchases || []).some(p => p.storeId === currentStoreObj?.id) ? 'Ir a Caja POS' : '⚡ Probar Venta en Caja'}
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
 
           {/* Banner Amigable de Membresía Requerida (Modo No Invasivo) */}
           {isSubscriptionBlocked && activeTab !== 'MEMBERSHIP' && (
