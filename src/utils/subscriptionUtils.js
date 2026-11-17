@@ -65,22 +65,26 @@ export function getStoreSubscriptionDetails(store, config = {}, dolarRateInfo = 
   const createdAtDate = parseDateSafe(store.createdAt || store.registeredAt) || now;
 
   // 2. Fecha Límite de Prueba Gratuita:
-  // Si la tienda ya tiene una fecha trialEndsAt guardada:
-  // DETECCIÓN Y PROTECCIÓN DE TIENDAS AFECTADAS (0 días de prueba):
-  // Si trialEndsAt es nula, o si es igual/anterior a su fecha de registro (diferencia menor a 24h),
-  // significa que la tienda se registró en un momento en que el sistema tenía el período de prueba en 0 meses,
-  // provocando un bloqueo prematuro involuntario.
-  // En ese caso, garantizamos que toda tienda existente disfrute de su mes de cortesía (30 días desde su registro)
-  // o sus 3 meses (90 días) si fue registrada bajo esa modalidad o si la plataforma está configurada a 3 meses.
-  let trialEndsAtDate = parseDateSafe(store.trialEndsAt);
-  const isZeroDayOrMissingTrial = !trialEndsAtDate || (trialEndsAtDate.getTime() - createdAtDate.getTime() < 24 * 60 * 60 * 1000);
+  // Determinar los meses de prueba aplicables a esta tienda:
+  // - Si la tienda tiene `store.trialMonths` definido explícitamente (incluso si es 0), se respeta con máxima prioridad.
+  // - Si no lo tiene definido, toma la configuración global del sistema `configuredTrialMonths`.
+  const hasStoreTrialMonths = store.trialMonths !== undefined && store.trialMonths !== null && store.trialMonths !== '';
+  const storeTrialMonths = hasStoreTrialMonths 
+    ? Math.max(0, parseInt(store.trialMonths, 10) || 0)
+    : configuredTrialMonths;
 
-  if (isZeroDayOrMissingTrial && !store.customTrialEndsAt) {
-    const storeTrialMonths = (store.trialMonths !== undefined && store.trialMonths > 0)
-      ? parseInt(store.trialMonths, 10)
-      : (configuredTrialMonths > 0 ? configuredTrialMonths : 1);
-    const storeTrialDays = Math.max(30, storeTrialMonths * 30);
-    trialEndsAtDate = new Date(createdAtDate.getTime() + (storeTrialDays * 24 * 60 * 60 * 1000));
+  let trialEndsAtDate = parseDateSafe(store.trialEndsAt);
+
+  // Si la tienda tiene 0 meses de prueba configurados (o el sistema está en 0 y la tienda no tiene meses de prueba):
+  if (storeTrialMonths === 0) {
+    trialEndsAtDate = createdAtDate;
+  } else if (!store.customTrialEndsAt) {
+    // Si la tienda tiene derecho a prueba (> 0 meses) pero no tenía trialEndsAt guardada o tenía una fecha corrupta:
+    const isZeroDayOrMissingTrial = !trialEndsAtDate || (trialEndsAtDate.getTime() - createdAtDate.getTime() < 24 * 60 * 60 * 1000);
+    if (isZeroDayOrMissingTrial) {
+      const storeTrialDays = storeTrialMonths * 30;
+      trialEndsAtDate = new Date(createdAtDate.getTime() + (storeTrialDays * 24 * 60 * 60 * 1000));
+    }
   }
 
   // 3. Exención de Pago (Concedida manualmente por el Super Administrador)
@@ -94,9 +98,11 @@ export function getStoreSubscriptionDetails(store, config = {}, dolarRateInfo = 
   );
 
   // 5. Período de Prueba en Curso (se respeta la fecha individual calculada/almacenada)
-  const msRemainingTrial = trialEndsAtDate.getTime() - now.getTime();
-  const trialDaysRemaining = Math.max(0, Math.ceil(msRemainingTrial / (1000 * 60 * 60 * 24)));
-  const isInTrial = !isPaidActive && !isExempt && (msRemainingTrial > 0);
+  const msRemainingTrial = (trialEndsAtDate ? trialEndsAtDate.getTime() : createdAtDate.getTime()) - now.getTime();
+  const trialDaysRemaining = (storeTrialMonths > 0 && msRemainingTrial > 0)
+    ? Math.max(0, Math.ceil(msRemainingTrial / (1000 * 60 * 60 * 24)))
+    : 0;
+  const isInTrial = !isPaidActive && !isExempt && (storeTrialMonths > 0) && (msRemainingTrial > 0);
 
   // 6. Bloqueo de Dashboard / Acceso Operativo al Panel:
   // La tienda tiene ACCESO TOTAL a operaciones del terminal si:
@@ -137,7 +143,7 @@ export function getStoreSubscriptionDetails(store, config = {}, dolarRateInfo = 
     isPaidActive,
     isInTrial,
     trialDaysRemaining,
-    trialMonths: configuredTrialMonths,
+    trialMonths: storeTrialMonths,
     isBlocked,
     hasAccess,
     statusLabel,

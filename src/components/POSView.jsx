@@ -3609,29 +3609,40 @@ export default function POSView({
 
         {/* Sidebar Footer: BCV Rate & Cashier Shift Card */}
         <div className="pos-sidebar-footer">
-          {/* Subscription Status Card ($5 BCV tras 3 meses de prueba) */}
+          {/* Subscription Status Card ($5 BCV tras período de prueba) */}
           {(() => {
             const sub = getStoreSubscriptionDetails(currentStoreObj, config, dolarRateInfo);
+            const isBlockedOrUnpaid = !sub.isExempt && !sub.isPaidActive && !sub.isInTrial;
+
             return (
-              <div style={{
-                background: sub.isExempt ? '#EFF6FF' : (sub.isPaidActive ? '#F0FDF4' : '#FFFBEB'),
-                border: `1px solid ${sub.isExempt ? '#BFDBFE' : (sub.isPaidActive ? '#BBF7D0' : '#FDE68A')}`,
-                borderRadius: '8px',
-                padding: '5px 8px',
-                marginBottom: '4px'
-              }}>
+              <div 
+                onClick={() => {
+                  if (isBlockedOrUnpaid) {
+                    setActiveTab('MEMBERSHIP');
+                  }
+                }}
+                style={{
+                  background: sub.isExempt ? '#EFF6FF' : (sub.isPaidActive ? '#F0FDF4' : (isBlockedOrUnpaid ? '#FEF2F2' : '#FFFBEB')),
+                  border: `1px solid ${sub.isExempt ? '#BFDBFE' : (sub.isPaidActive ? '#BBF7D0' : (isBlockedOrUnpaid ? '#FECACA' : '#FDE68A'))}`,
+                  borderRadius: '8px',
+                  padding: '5px 8px',
+                  marginBottom: '4px',
+                  cursor: isBlockedOrUnpaid ? 'pointer' : 'default'
+                }}
+                title={isBlockedOrUnpaid ? 'Haz clic para ver opciones de pago de membresía ($5 BCV)' : undefined}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{
                     fontSize: '0.58rem',
                     fontWeight: 800,
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
-                    color: sub.isExempt ? '#1E40AF' : (sub.isPaidActive ? '#15803D' : '#92400E')
+                    color: sub.isExempt ? '#1E40AF' : (sub.isPaidActive ? '#15803D' : (isBlockedOrUnpaid ? '#DC2626' : '#92400E'))
                   }}>
-                    {sub.isExempt ? 'Plan Cortesía' : (sub.isPaidActive ? 'Suscripción Activa' : 'Prueba Gratuita')}
+                    {sub.isExempt ? 'Plan Cortesía' : (sub.isPaidActive ? 'Suscripción Activa' : (isBlockedOrUnpaid ? '🔒 Pago Requerido' : 'Prueba Gratuita'))}
                   </span>
                   <span style={{ fontSize: '0.64rem' }}>
-                    {sub.isExempt ? '🛡️' : (sub.isPaidActive ? '⭐' : '🎁')}
+                    {sub.isExempt ? '🛡️' : (sub.isPaidActive ? '⭐' : (isBlockedOrUnpaid ? '🔒' : '🎁'))}
                   </span>
                 </div>
                 <div style={{ fontSize: '0.70rem', fontWeight: 800, color: '#1E293B', marginTop: '1px', lineHeight: 1.2 }}>
@@ -3639,11 +3650,13 @@ export default function POSView({
                     ? 'Acceso Exento'
                     : (sub.isPaidActive
                         ? `Al día (${sub.paidUntil?.toLocaleDateString('es-VE') || 'Activo'})`
-                        : `Quedan ${sub.trialDaysRemaining} días gratis`)}
+                        : (isBlockedOrUnpaid
+                            ? 'Membresía por activar'
+                            : `Quedan ${sub.trialDaysRemaining} días gratis`))}
                 </div>
                 {!sub.isExempt && (
-                  <div style={{ fontSize: '0.58rem', color: '#64748B', marginTop: '1px' }}>
-                    {sub.isPaidActive ? 'Plan: $5 USD / mes' : 'Luego: $5 USD a tasa BCV'}
+                  <div style={{ fontSize: '0.58rem', color: isBlockedOrUnpaid ? '#DC2626' : '#64748B', marginTop: '1px', fontWeight: isBlockedOrUnpaid ? 700 : 400 }}>
+                    {sub.isPaidActive ? 'Plan: $5 USD / mes' : (isBlockedOrUnpaid ? `Pagar $${sub.priceUsd} a tasa BCV ➔` : 'Luego: $5 USD a tasa BCV')}
                   </div>
                 )}
               </div>
