@@ -2356,15 +2356,96 @@ service cloud.firestore {
           .reduce((sum, p) => sum + (parseFloat(p.amountUsd) || 5), 0);
 
         return (
-          <div className="glass-panel" style={{ padding: '22px' }}>
+          <div className="glass-panel" style={{ padding: 'clamp(12px, 3vw, 22px)' }}>
+            <style>{`
+              .admin-payments-kpis {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+                gap: 12px;
+                margin-bottom: 20px;
+                width: 100%;
+                box-sizing: border-box;
+              }
+              .admin-payments-table-view {
+                display: block;
+                width: 100%;
+              }
+              .admin-payments-cards-view {
+                display: none;
+              }
+              .admin-payments-filters-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 12px;
+                margin-bottom: 16px;
+                width: 100%;
+                box-sizing: border-box;
+              }
+              .admin-payments-filter-pills {
+                display: flex;
+                gap: 4px;
+                background: #FAF8F5;
+                padding: 3px;
+                borderRadius: 10px;
+                border: 1px solid var(--border-subtle);
+                max-width: 100%;
+                box-sizing: border-box;
+              }
+              .admin-payments-search {
+                width: 280px;
+                box-sizing: border-box;
+              }
+
+              @media (max-width: 768px) {
+                .admin-payments-kpis {
+                  grid-template-columns: repeat(2, 1fr) !important;
+                  gap: 8px !important;
+                  margin-bottom: 14px !important;
+                }
+                .admin-payments-kpis > div {
+                  padding: 10px 12px !important;
+                }
+                .admin-payments-kpis > div > div:nth-child(2) {
+                  font-size: 1.15rem !important;
+                }
+                .admin-payments-filters-row {
+                  flex-direction: column !important;
+                  align-items: stretch !important;
+                  gap: 10px !important;
+                }
+                .admin-payments-filter-pills {
+                  overflow-x: auto !important;
+                  white-space: nowrap !important;
+                  width: 100% !important;
+                  padding-bottom: 4px !important;
+                  -webkit-overflow-scrolling: touch !important;
+                }
+                .admin-payments-search {
+                  width: 100% !important;
+                }
+                .admin-payments-table-view {
+                  display: none !important;
+                }
+                .admin-payments-cards-view {
+                  display: flex !important;
+                  flex-direction: column !important;
+                  gap: 10px !important;
+                  width: 100% !important;
+                  margin-bottom: 16px !important;
+                }
+              }
+            `}</style>
+
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px', marginBottom: '18px' }}>
               <div>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <CreditCard size={22} color="var(--c-primary)" />
                   Control de Pagos Móvil & Membresías POS
                 </h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '4px 0 0 0' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.80rem', margin: '4px 0 0 0' }}>
                   Concilia y valida los pagos de $5 USD (tasa BCV) reportados por los comercios con referencia, teléfono y banco de origen.
                 </p>
               </div>
@@ -2380,7 +2461,8 @@ service cloud.firestore {
                   gap: '8px',
                   color: '#92400E',
                   fontSize: '0.82rem',
-                  fontWeight: 800
+                  fontWeight: 800,
+                  boxSizing: 'border-box'
                 }}>
                   <Clock size={16} />
                   <span>{totalPending} comprobante(s) esperando tu validación</span>
@@ -2389,55 +2471,43 @@ service cloud.firestore {
             </div>
 
             {/* Tarjetas KPI Resumen */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '12px',
-              marginBottom: '20px'
-            }}>
+            <div className="admin-payments-kpis">
               <div style={{ background: '#FFFFFF', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', borderLeft: '4px solid #F59E0B' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Por Verificar</div>
+                <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Por Verificar</div>
                 <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#B45309', marginTop: '4px' }}>
                   {totalPending}
                 </div>
-                <div style={{ fontSize: '0.70rem', color: 'var(--text-dim)' }}>Reportes en espera</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Reportes en espera</div>
               </div>
 
               <div style={{ background: '#FFFFFF', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', borderLeft: '4px solid #16A34A' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Pagos Aprobados</div>
+                <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Pagos Aprobados</div>
                 <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#16A34A', marginTop: '4px' }}>
                   {totalApproved}
                 </div>
-                <div style={{ fontSize: '0.70rem', color: 'var(--text-dim)' }}>Membresías activadas</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Membresías activadas</div>
               </div>
 
               <div style={{ background: '#FFFFFF', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', borderLeft: '4px solid #3B82F6' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Total Recaudado (USD)</div>
+                <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Total USD</div>
                 <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1E40AF', marginTop: '4px' }}>
                   ${totalCollectedUsd.toFixed(2)}
                 </div>
-                <div style={{ fontSize: '0.70rem', color: 'var(--text-dim)' }}>Equivalente acumulado</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Equivalente acumulado</div>
               </div>
 
               <div style={{ background: '#FFFFFF', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', borderLeft: '4px solid #8B5CF6' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Total Recaudado (Bs.)</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#6D28D9', marginTop: '4px' }}>
+                <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Total Bs. (BCV)</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#6D28D9', marginTop: '4px', wordBreak: 'break-all' }}>
                   Bs. {totalCollectedVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
-                <div style={{ fontSize: '0.70rem', color: 'var(--text-dim)' }}>A tasa oficial BCV</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>A tasa oficial BCV</div>
               </div>
             </div>
 
             {/* Barra de Filtros y Búsqueda */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '12px',
-              marginBottom: '16px'
-            }}>
-              <div style={{ display: 'flex', gap: '4px', background: '#FAF8F5', padding: '3px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+            <div className="admin-payments-filters-row">
+              <div className="admin-payments-filter-pills">
                 {[
                   { id: 'ALL', label: `Todos (${consolidatedPayments.length})` },
                   { id: 'PENDING', label: `⏳ Pendientes (${totalPending})` },
@@ -2457,7 +2527,8 @@ service cloud.firestore {
                       background: paymentsFilter === f.id ? '#FFFFFF' : 'transparent',
                       color: paymentsFilter === f.id ? 'var(--c-primary)' : 'var(--text-muted)',
                       boxShadow: paymentsFilter === f.id ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
                     }}
                   >
                     {f.label}
@@ -2465,7 +2536,7 @@ service cloud.firestore {
                 ))}
               </div>
 
-              <div className="admin-search-wrapper" style={{ width: '280px' }}>
+              <div className="admin-search-wrapper admin-payments-search">
                 <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                 <input
                   type="text"
@@ -2473,13 +2544,200 @@ service cloud.firestore {
                   value={paymentsSearch}
                   onChange={(e) => setPaymentsSearch(e.target.value)}
                   className="form-input"
-                  style={{ paddingLeft: '30px', fontSize: '0.78rem' }}
+                  style={{ paddingLeft: '30px', fontSize: '0.78rem', width: '100%', boxSizing: 'border-box' }}
                 />
               </div>
             </div>
 
-            {/* Tabla de Pagos */}
-            <div className="custom-table-container">
+            {/* 1. VISTA MÓVIL (TARJETAS RESPONSIVE PARA SMARTPHONES) */}
+            <div className="admin-payments-cards-view">
+              {paginatedPayments.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)', background: '#FFFFFF', borderRadius: '14px', border: '1px solid #EDE2D5' }}>
+                  <CreditCard size={32} style={{ opacity: 0.3, margin: '0 auto 8px auto', display: 'block' }} />
+                  <div style={{ fontWeight: 700, fontSize: '0.90rem' }}>No se encontraron reportes de pago</div>
+                  <div style={{ fontSize: '0.74rem', marginTop: '2px' }}>
+                    {paymentsSearch ? 'Intenta con otro término de búsqueda.' : 'Los pagos reportados aparecerán aquí.'}
+                  </div>
+                </div>
+              ) : (
+                paginatedPayments.map((p, idx) => {
+                  const targetStore = (stores || []).find(s => s.id === p.storeId);
+                  const isPending = p.status === 'PENDIENTE';
+                  const isApproved = p.status === 'APROBADO';
+                  const isRejected = p.status === 'RECHAZADO';
+                  const cleanPayerPhone = (p.payerPhone || targetStore?.phone || '').replace(/[^0-9]/g, '');
+
+                  return (
+                    <div
+                      key={p.id || `${p.storeId}-${p.reference}-${idx}`}
+                      style={{
+                        background: isPending ? '#FFFBEB' : '#FFFFFF',
+                        border: `1.5px solid ${isPending ? '#FCD34D' : '#EDE2D5'}`,
+                        borderRadius: '14px',
+                        padding: '14px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                        boxSizing: 'border-box',
+                        width: '100%'
+                      }}
+                    >
+                      {/* Cabecera de la tarjeta: Tienda + Estado */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                          {targetStore && <StoreLogoBadge store={targetStore} size={36} borderRadius="8px" />}
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.88rem', wordBreak: 'break-word', lineHeight: 1.2 }}>
+                              {p.storeName || targetStore?.name || p.storeId}
+                            </div>
+                            <div style={{ fontSize: '0.70rem', color: 'var(--text-dim)', fontFamily: 'monospace', marginTop: '1px' }}>
+                              {p.storeId} {targetStore?.city ? `• ${targetStore.city}` : ''}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ flexShrink: 0 }}>
+                          {isPending && (
+                            <span style={{ background: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', padding: '3px 8px', borderRadius: '8px', fontSize: '0.68rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <Clock size={11} />
+                              <span>Por Verificar</span>
+                            </span>
+                          )}
+                          {isApproved && (
+                            <span style={{ background: '#DCFCE7', color: '#15803D', border: '1px solid #BBF7D0', padding: '3px 8px', borderRadius: '8px', fontSize: '0.68rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <CheckCircle2 size={11} />
+                              <span>Aprobado</span>
+                            </span>
+                          )}
+                          {isRejected && (
+                            <span style={{ background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', padding: '3px 8px', borderRadius: '8px', fontSize: '0.68rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <AlertCircle size={11} />
+                              <span>Rechazado</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bloque Informativo del Pago */}
+                      <div style={{
+                        background: isPending ? 'rgba(254, 243, 199, 0.45)' : '#FAF8F5',
+                        border: '1px solid #EDE2D5',
+                        borderRadius: '10px',
+                        padding: '10px 12px',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '8px',
+                        fontSize: '0.76rem',
+                        marginBottom: '10px'
+                      }}>
+                        <div>
+                          <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontWeight: 700 }}>REFERENCIA</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
+                            <code style={{ fontWeight: 800, fontSize: '0.84rem', color: 'var(--text-main)' }}>{p.reference}</code>
+                            <button
+                              type="button"
+                              onClick={() => { navigator.clipboard.writeText(p.reference); onNotify('Referencia copiada', 'info'); }}
+                              style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--text-muted)' }}
+                              title="Copiar referencia"
+                            >
+                              <Copy size={12} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontWeight: 700 }}>MONTO</div>
+                          <div style={{ fontWeight: 900, color: 'var(--c-primary)', fontSize: '0.88rem' }}>
+                            Bs. {parseFloat(p.amountVes || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                          <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)' }}>(${p.amountUsd || 5} USD)</div>
+                        </div>
+
+                        <div>
+                          <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontWeight: 700 }}>BANCO EMISOR</div>
+                          <div style={{ fontWeight: 700, color: '#334155', wordBreak: 'break-word' }}>{p.bankOrigin || 'No especificado'}</div>
+                        </div>
+
+                        <div>
+                          <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontWeight: 700 }}>TELÉFONO EMISOR</div>
+                          <div style={{ fontWeight: 700, color: '#0F172A', fontFamily: 'monospace' }}>{p.payerPhone || targetStore?.phone || 'No especificado'}</div>
+                        </div>
+
+                        <div style={{ gridColumn: '1 / -1', fontSize: '0.68rem', color: 'var(--text-dim)', borderTop: '1px dashed #EDE2D5', paddingTop: '4px' }}>
+                          📅 <strong>Reportado:</strong> {p.reportedAt ? new Date(p.reportedAt).toLocaleString('es-VE') : 'N/A'}
+                        </div>
+                      </div>
+
+                      {/* Botones de Acción Móvil */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        {isPending && (
+                          <button
+                            type="button"
+                            onClick={() => handleApproveSubscriptionPayment(p, 1)}
+                            className="btn btn-emerald"
+                            style={{ flex: '1 1 130px', padding: '8px 12px', fontSize: '0.78rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                          >
+                            <Check size={14} />
+                            <span>Aprobar Pago ($5)</span>
+                          </button>
+                        )}
+
+                        {cleanPayerPhone && (
+                          <a
+                            href={`https://wa.me/${cleanPayerPhone}?text=${encodeURIComponent(`Hola ${p.storeName || targetStore?.name || ''}, te contactamos desde fidely CLUB respecto al reporte de pago móvil por Bs. ${p.amountVes} (Ref: ${p.reference}).`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              padding: '8px 12px',
+                              borderRadius: '8px',
+                              background: '#ECFDF5',
+                              color: '#059669',
+                              border: '1px solid #A7F3D0',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px',
+                              fontSize: '0.76rem',
+                              fontWeight: 700,
+                              textDecoration: 'none',
+                              flex: '1 1 auto'
+                            }}
+                          >
+                            <MessageCircle size={14} />
+                            <span>WhatsApp</span>
+                          </a>
+                        )}
+
+                        {isPending && (
+                          <button
+                            type="button"
+                            onClick={() => handleRejectSubscriptionPayment(p)}
+                            className="btn btn-rose"
+                            style={{ padding: '8px 10px', fontSize: '0.76rem', fontWeight: 700 }}
+                            title="Rechazar comprobante"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+
+                        {targetStore && (
+                          <button
+                            type="button"
+                            onClick={() => setSubscriptionStore(targetStore)}
+                            className="btn btn-secondary"
+                            style={{ padding: '8px 10px', fontSize: '0.76rem', fontWeight: 700 }}
+                            title="Gestionar membresía"
+                          >
+                            <CreditCard size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* 2. VISTA ESCRITORIO (TABLA COMPLETA) */}
+            <div className="custom-table-container admin-payments-table-view">
               <table className="custom-table">
                 <thead>
                   <tr>
@@ -6797,26 +7055,30 @@ service cloud.firestore {
       )}
 
       {/* MODAL: GESTIÓN DE SUSCRIPCIÓN ($5 USD A TASA BCV / PRUEBA 3 MESES) */}
+      {/* MODAL DE GESTIÓN Y REVISIÓN DE SUSCRIPCIÓN / PAGO DE TIENDA */}
       {subscriptionStore && (
         <div className="modal-overlay" onClick={() => setSubscriptionStore(null)}>
           <div
             className="modal-dialog"
             onClick={(e) => e.stopPropagation()}
             style={{
-              padding: '24px',
+              padding: 'clamp(14px, 4vw, 24px)',
               borderRadius: '20px',
               maxWidth: '520px',
               width: '100%',
               background: '#FFFFFF',
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              boxSizing: 'border-box'
             }}
           >
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                 <div style={{
-                  width: '42px',
-                  height: '42px',
+                  width: '40px',
+                  height: '40px',
                   borderRadius: '12px',
                   background: 'var(--c-secondary-soft, #F7EFE8)',
                   display: 'flex',
@@ -6824,13 +7086,13 @@ service cloud.firestore {
                   justifyContent: 'center',
                   flexShrink: 0
                 }}>
-                  <CreditCard size={22} color="var(--c-primary, #9C382A)" />
+                  <CreditCard size={20} color="var(--c-primary, #9C382A)" />
                 </div>
-                <div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1E293B', margin: 0, lineHeight: 1.2 }}>
+                <div style={{ minWidth: 0 }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1E293B', margin: 0, lineHeight: 1.2, wordBreak: 'break-word' }}>
                     Gestión de Suscripción POS
                   </h3>
-                  <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>
+                  <div style={{ fontSize: '0.76rem', color: '#64748B', fontWeight: 600, marginTop: '2px', wordBreak: 'break-word' }}>
                     {subscriptionStore.name} ({subscriptionStore.id})
                   </div>
                 </div>
@@ -6848,7 +7110,8 @@ service cloud.firestore {
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  flexShrink: 0
                 }}
               >
                 <X size={16} />
@@ -6864,10 +7127,12 @@ service cloud.firestore {
                     background: '#FAF8F5',
                     border: '1.5px solid #EDE2D5',
                     borderRadius: '14px',
-                    padding: '14px 16px',
-                    marginBottom: '16px'
+                    padding: '12px 14px',
+                    marginBottom: '14px',
+                    boxSizing: 'border-box',
+                    width: '100%'
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
                       <span style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: 700 }}>Estado Actual:</span>
                       <div>
                         {sub.isExempt ? (
@@ -6890,7 +7155,7 @@ service cloud.firestore {
                       </div>
                     </div>
 
-                    <div style={{ fontSize: '0.76rem', color: '#475569', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: '0.76rem', color: '#475569', lineHeight: 1.55 }}>
                       <div>📅 <strong>Registro:</strong> {sub.createdAt ? sub.createdAt.toLocaleDateString('es-VE') : 'N/A'}</div>
                       <div>
                         ⏳ <strong>Fin de Prueba Asignada:</strong> {sub.trialEndsAt ? sub.trialEndsAt.toLocaleDateString('es-VE') : 'N/A'}
@@ -6916,40 +7181,42 @@ service cloud.firestore {
                       background: '#FFFBEB',
                       border: '1.5px solid #FCD34D',
                       borderRadius: '14px',
-                      padding: '16px',
-                      marginBottom: '16px'
+                      padding: '14px',
+                      marginBottom: '14px',
+                      boxSizing: 'border-box',
+                      width: '100%'
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#92400E', fontWeight: 800, fontSize: '0.86rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#92400E', fontWeight: 800, fontSize: '0.84rem' }}>
                           <Clock size={16} />
                           <span>Comprobante de Pago Móvil Reportado</span>
                         </div>
-                        <span style={{ background: '#FDE68A', color: '#78350F', fontSize: '0.70rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px' }}>
+                        <span style={{ background: '#FDE68A', color: '#78350F', fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px' }}>
                           Por Verificar
                         </span>
                       </div>
 
                       <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-                        gap: '8px',
-                        fontSize: '0.78rem',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                        gap: '6px',
+                        fontSize: '0.76rem',
                         color: '#78350F',
                         background: '#FEF3C7',
                         padding: '10px 12px',
                         borderRadius: '10px',
-                        marginBottom: '12px'
+                        marginBottom: '10px'
                       }}>
                         <div><strong>🔢 Referencia:</strong> <code style={{ fontWeight: 800, background: '#FFFBEB', padding: '1px 5px', borderRadius: '4px' }}>{sub.pendingPayment.reference}</code></div>
-                        <div><strong>🏦 Banco de donde pagaron:</strong> {sub.pendingPayment.bankOrigin || 'No especificado'}</div>
-                        <div><strong>📱 Teléfono emisor:</strong> {sub.pendingPayment.payerPhone || subscriptionStore.phone || 'No especificado'}</div>
+                        <div><strong>🏦 Banco emisor:</strong> {sub.pendingPayment.bankOrigin || 'No especificado'}</div>
+                        <div><strong>📱 Teléfono:</strong> {sub.pendingPayment.payerPhone || subscriptionStore.phone || 'No especificado'}</div>
                         <div><strong>💵 Monto pagado:</strong> Bs. {sub.pendingPayment.amountVes}</div>
-                        <div style={{ gridColumn: '1 / -1', fontSize: '0.72rem', color: '#92400E', borderTop: '1px dashed #FCD34D', paddingTop: '6px' }}>
+                        <div style={{ gridColumn: '1 / -1', fontSize: '0.70rem', color: '#92400E', borderTop: '1px dashed #FCD34D', paddingTop: '4px' }}>
                           📅 <strong>Reportado el:</strong> {new Date(sub.pendingPayment.reportedAt).toLocaleString('es-VE')}
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         {(sub.pendingPayment.payerPhone || subscriptionStore.phone) && (
                           <a
                             href={`https://wa.me/${(sub.pendingPayment.payerPhone || subscriptionStore.phone).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${subscriptionStore.name}, estamos revisando tu reporte de pago móvil por Bs. ${sub.pendingPayment.amountVes} (Ref: ${sub.pendingPayment.reference}) para la membresía de tu tienda en fidely CLUB.`)}`}
@@ -6980,9 +7247,9 @@ service cloud.firestore {
                           onClick={() => handleExtendStoreSubscription(1)}
                           className="btn"
                           style={{
-                            flex: '2 1 180px',
-                            padding: '8px 14px',
-                            fontSize: '0.8rem',
+                            flex: '1 1 180px',
+                            padding: '9px 14px',
+                            fontSize: '0.80rem',
                             fontWeight: 800,
                             background: '#16A34A',
                             color: '#FFFFFF',
@@ -6996,23 +7263,23 @@ service cloud.firestore {
                           }}
                         >
                           <Check size={16} />
-                          <span>Aprobar Pago y Activar por 1 Mes ($5)</span>
+                          <span>Aprobar Pago y Activar ($5)</span>
                         </button>
                       </div>
                     </div>
                   )}
 
                   {/* Acciones de Suscripción */}
-                  <div style={{ marginBottom: '16px' }}>
-                    <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>
+                  <div style={{ marginBottom: '14px' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>
                       Activar / Extender Suscripción ($5/mes):
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
                       <button
                         type="button"
                         onClick={() => handleExtendStoreSubscription(1)}
                         className="btn btn-secondary"
-                        style={{ padding: '8px 10px', fontSize: '0.78rem', fontWeight: 800, color: '#15803D', borderColor: '#BBF7D0', background: '#F0FDF4' }}
+                        style={{ padding: '8px 6px', fontSize: '0.76rem', fontWeight: 800, color: '#15803D', borderColor: '#BBF7D0', background: '#F0FDF4', textAlign: 'center' }}
                       >
                         +1 Mes ($5)
                       </button>
@@ -7020,7 +7287,7 @@ service cloud.firestore {
                         type="button"
                         onClick={() => handleExtendStoreSubscription(3)}
                         className="btn btn-secondary"
-                        style={{ padding: '8px 10px', fontSize: '0.78rem', fontWeight: 800, color: '#15803D', borderColor: '#BBF7D0', background: '#F0FDF4' }}
+                        style={{ padding: '8px 6px', fontSize: '0.76rem', fontWeight: 800, color: '#15803D', borderColor: '#BBF7D0', background: '#F0FDF4', textAlign: 'center' }}
                       >
                         +3 Meses ($15)
                       </button>
@@ -7028,7 +7295,7 @@ service cloud.firestore {
                         type="button"
                         onClick={() => handleExtendStoreSubscription(12)}
                         className="btn btn-secondary"
-                        style={{ padding: '8px 10px', fontSize: '0.78rem', fontWeight: 800, color: '#15803D', borderColor: '#BBF7D0', background: '#F0FDF4' }}
+                        style={{ padding: '8px 6px', fontSize: '0.76rem', fontWeight: 800, color: '#15803D', borderColor: '#BBF7D0', background: '#F0FDF4', textAlign: 'center' }}
                       >
                         +1 Año ($50)
                       </button>
@@ -7079,7 +7346,7 @@ service cloud.firestore {
               );
             })()}
 
-            <div style={{ marginTop: '20px', textAlign: 'right' }}>
+            <div style={{ marginTop: '16px', textAlign: 'right' }}>
               <button
                 type="button"
                 onClick={() => setSubscriptionStore(null)}
