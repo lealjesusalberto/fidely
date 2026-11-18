@@ -2258,22 +2258,22 @@ export default function ClientPortalView({
             <div style={{
               marginBottom: '22px',
               background: '#FFFFFF',
-              border: '1.5px solid var(--border-subtle)',
-              borderRadius: '20px',
-              padding: '16px 18px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+              border: '1px solid rgba(0, 0, 0, 0.05)',
+              borderRadius: '24px',
+              padding: '18px 20px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)'
             }}>
               {/* Header de la sección */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: '14px',
+                marginBottom: '16px',
                 padding: '0 2px'
               }}>
                 <h3 style={{
-                  fontSize: '1.08rem',
-                  fontWeight: 800,
+                  fontSize: '1.12rem',
+                  fontWeight: 850,
                   color: 'var(--text-main, #1F2937)',
                   margin: 0,
                   letterSpacing: '-0.02em'
@@ -2290,9 +2290,9 @@ export default function ClientPortalView({
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#E11D48',
+                    color: 'var(--c-primary, #70092B)',
                     fontSize: '0.84rem',
-                    fontWeight: 750,
+                    fontWeight: 800,
                     cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -2316,9 +2316,9 @@ export default function ClientPortalView({
                 style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '16px',
+                  gap: '18px',
                   overflowX: 'auto',
-                  padding: '4px 2px 6px 2px',
+                  padding: '2px 2px 6px 2px',
                   scrollbarWidth: 'none',
                   msOverflowStyle: 'none',
                   WebkitOverflowScrolling: 'touch'
@@ -2362,22 +2362,22 @@ export default function ClientPortalView({
                       >
                         {/* Contenedor Circular del Logo */}
                         <div style={{
-                          width: '60px',
-                          height: '60px',
+                          width: '62px',
+                          height: '62px',
                           borderRadius: '50%',
                           overflow: 'hidden',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04)',
+                          boxShadow: '0 4px 14px rgba(0, 0, 0, 0.06)',
                           border: '2px solid #FFFFFF',
                           background: '#FFFFFF',
-                          marginBottom: '6px',
+                          marginBottom: '7px',
                           flexShrink: 0
                         }}>
                           <StoreLogoBadge
                             store={st}
-                            size={60}
+                            size={62}
                             borderRadius="50%"
                             showCategoryBadge={false}
                           />
@@ -2680,15 +2680,15 @@ export default function ClientPortalView({
               {/* Switch de Proximidad unificado (como en la app móvil) */}
               <div style={{
                 background: '#FFFFFF',
-                borderRadius: '16px',
-                border: '1.2px solid var(--border-subtle)',
-                padding: '12px 16px',
-                marginBottom: '14px',
+                borderRadius: '20px',
+                border: '1px solid rgba(0, 0, 0, 0.05)',
+                padding: '14px 18px',
+                marginBottom: '16px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: '12px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                boxShadow: '0 4px 16px rgba(0,0,0,0.02)'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{
@@ -2842,12 +2842,12 @@ export default function ClientPortalView({
                       <div
                         style={{
                           background: `linear-gradient(135deg, ${card.cardColor || '#9C382A'} 0%, ${card.cardGradient || '#DE8B76'} 100%)`,
-                          borderRadius: '22px',
-                          padding: '20px',
+                          borderRadius: '24px',
+                          padding: '22px',
                           color: '#FFFFFF',
                           boxShadow: isNearbyStoreFeatured
                             ? '0 12px 30px rgba(22, 101, 52, 0.25), 0 0 0 2.5px #22C55E'
-                            : '0 8px 24px rgba(0, 0, 0, 0.12), inset 0 1px 1px rgba(255,255,255,0.3)',
+                            : '0 8px 26px rgba(0, 0, 0, 0.10), inset 0 1px 1px rgba(255,255,255,0.3)',
                           display: 'flex',
                           flexDirection: 'column',
                           justifyContent: 'space-between',
@@ -3211,18 +3211,18 @@ export default function ClientPortalView({
                           style={{
                             cursor: 'pointer',
                             background: '#FFFFFF',
-                            border: '1.2px solid var(--border-subtle)',
-                            borderRadius: '16px',
-                            padding: '12px 16px',
+                            border: '1px solid rgba(0, 0, 0, 0.05)',
+                            borderRadius: '20px',
+                            padding: '14px 18px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            marginTop: '10px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                            marginTop: '12px',
+                            boxShadow: '0 4px 16px rgba(0,0,0,0.02)',
                             transition: 'all 0.18s ease'
                           }}
                           onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--c-primary)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.05)'; }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{
@@ -3477,25 +3477,24 @@ export default function ClientPortalView({
                   return (
                     <div
                       key={promo.id}
-                      className="glass-panel"
                       style={{
                         background: hasClaimed
-                          ? 'linear-gradient(145deg, #F7EFE8 0%, #FFFFFF 100%)'
+                          ? 'linear-gradient(145deg, #FAF4EE 0%, #FFFFFF 100%)'
                           : isSoldOut
                             ? '#F8FAFC'
                             : '#FFFFFF',
-                        borderRadius: '20px',
-                        padding: '18px',
+                        borderRadius: '24px',
+                        padding: '20px',
                         border: hasClaimed
-                          ? '1.5px solid var(--c-primary-light, #DE8B76)'
+                          ? '1.5px solid var(--c-primary, #70092B)'
                           : isSoldOut
                             ? '1px dashed #CBD5E1'
-                            : '1.5px solid var(--border-subtle)',
+                            : '1px solid rgba(0, 0, 0, 0.05)',
                         display: 'flex',
                         flexDirection: 'column',
                         position: 'relative',
                         overflow: 'hidden',
-                        boxShadow: hasClaimed ? '0 6px 18px rgba(156, 56, 42, 0.10)' : '0 4px 14px rgba(0,0,0,0.04)'
+                        boxShadow: hasClaimed ? '0 6px 18px rgba(112, 9, 43, 0.10)' : '0 4px 18px rgba(0,0,0,0.03)'
                       }}
                     >
                       {/* Store Header */}
@@ -3814,14 +3813,14 @@ export default function ClientPortalView({
                           key={v.id}
                           style={{
                             background: '#FFFFFF',
-                            borderRadius: '20px',
-                            border: '1.5px solid var(--border-subtle)',
-                            padding: '16px 18px',
+                            borderRadius: '24px',
+                            border: '1px solid rgba(0, 0, 0, 0.05)',
+                            padding: '18px 20px',
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
-                            marginBottom: '10px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                            marginBottom: '12px',
+                            boxShadow: '0 4px 18px rgba(0,0,0,0.03)'
                           }}
                         >
                           <div>
@@ -4293,13 +4292,13 @@ export default function ClientPortalView({
                       key={item.id || idx}
                       style={{
                         background: '#FFFFFF',
-                        borderRadius: '20px',
-                        border: isStamp ? '1px solid var(--border-subtle)' : '1.5px solid #86EFAC',
-                        padding: '14px 16px',
+                        borderRadius: '22px',
+                        border: isStamp ? '1px solid rgba(0, 0, 0, 0.05)' : '1.5px solid #86EFAC',
+                        padding: '16px 18px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '12px',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+                        gap: '14px',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.02)'
                       }}
                     >
                       <div style={{
@@ -4389,14 +4388,14 @@ export default function ClientPortalView({
                   onChange={(e) => setStoreSearchQuery(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '12px 38px 12px 42px',
-                    borderRadius: '16px',
-                    border: '1.5px solid #EDE2D5',
+                    padding: '13px 40px 13px 44px',
+                    borderRadius: '20px',
+                    border: '1px solid rgba(0, 0, 0, 0.08)',
                     background: '#FFFFFF',
                     fontSize: '0.88rem',
                     color: 'var(--text-main)',
                     outline: 'none',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.03)',
                     transition: 'border-color 0.2s ease'
                   }}
                 />
@@ -4551,13 +4550,13 @@ export default function ClientPortalView({
                       key={st.id}
                       style={{
                         background: '#FFFFFF',
-                        borderRadius: '20px',
-                        border: '1.5px solid #EDE2D5',
+                        borderRadius: '24px',
+                        border: '1px solid rgba(0, 0, 0, 0.05)',
                         boxShadow: '0 4px 18px rgba(0, 0, 0, 0.03)',
-                        padding: '16px 18px',
+                        padding: '18px 20px',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '12px',
+                        gap: '14px',
                         transition: 'box-shadow 0.2s ease'
                       }}
                     >
@@ -4566,8 +4565,8 @@ export default function ClientPortalView({
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
                           <StoreLogoBadge
                             store={st}
-                            size={52}
-                            borderRadius="14px"
+                            size={54}
+                            borderRadius="16px"
                             showCategoryBadge={false}
                           />
                           <div style={{ minWidth: 0, flex: 1 }}>
@@ -6358,176 +6357,147 @@ export default function ClientPortalView({
         .client-bottom-dock-wrapper {
           display: flex !important;
           position: fixed;
-          bottom: max(14px, env(safe-area-inset-bottom));
-          left: 14px;
-          right: 14px;
+          bottom: max(16px, env(safe-area-inset-bottom));
+          left: 16px;
+          right: 16px;
           justify-content: center;
           z-index: 950;
           pointer-events: none;
         }
 
-        @keyframes qrAuraGlow {
-          0%, 100% {
-            box-shadow: 0 10px 24px -2px rgba(156, 56, 42, 0.45), 
-                        0 0 0 1px rgba(184, 93, 67, 0.15), 
-                        0 0 0 4px #FFFFFF,
-                        inset 0 1px 2px rgba(255, 255, 255, 0.55);
-            transform: translateY(0);
-          }
-          50% {
-            box-shadow: 0 14px 30px 0px rgba(156, 56, 42, 0.62), 
-                        0 0 0 4.5px rgba(217, 130, 108, 0.28), 
-                        0 0 0 4px #FFFFFF,
-                        inset 0 1px 2px rgba(255, 255, 255, 0.7);
-            transform: translateY(-2px);
-          }
-        }
-
-        @keyframes dotPulse {
-          0%, 100% { transform: scale(1); opacity: 0.9; }
-          50% { transform: scale(1.3); opacity: 1; }
-        }
-
         .client-bottom-nav {
-            pointer-events: auto;
-            width: 100%;
-            max-width: 440px;
-            height: 64px;
-            background: rgba(255, 255, 255, 0.88);
-            backdrop-filter: blur(28px) saturate(180%);
-            -webkit-backdrop-filter: blur(28px) saturate(180%);
-            border-radius: 28px;
-            border: 1px solid rgba(255, 255, 255, 0.85);
-            box-shadow: 0 16px 36px -6px rgba(44, 24, 16, 0.16),
-                        0 4px 12px rgba(0, 0, 0, 0.04),
-                        0 0 0 1px rgba(184, 93, 67, 0.08),
-                        inset 0 1px 1px rgba(255, 255, 255, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            padding: 4px 8px;
-          }
+          pointer-events: auto;
+          width: 100%;
+          max-width: 440px;
+          height: 66px;
+          background: #FFFFFF;
+          border-radius: 28px;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07), 0 2px 8px rgba(0, 0, 0, 0.02);
+          display: flex;
+          align-items: center;
+          justify-content: space-around;
+          padding: 4px 10px;
+        }
 
-          .client-nav-item {
-            background: none;
-            border: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justifyContent: center;
-            flex: 1;
-            padding: 4px 2px;
-            cursor: pointer;
-            outline: none;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-          }
+        .client-nav-item {
+          background: none;
+          border: none;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          flex: 1;
+          padding: 4px 2px;
+          cursor: pointer;
+          outline: none;
+          -webkit-tap-highlight-color: transparent;
+          user-select: none;
+          transition: transform 0.16s ease;
+          position: relative;
+        }
 
-          .client-nav-item:active {
-            transform: scale(0.90);
-          }
+        .client-nav-item:active {
+          transform: scale(0.92);
+        }
 
-          .client-nav-icon-wrap {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-          }
+        .client-nav-icon-wrap {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.2s ease;
+        }
 
-          .client-nav-item.is-active .client-nav-icon-wrap {
-            transform: translateY(-1px);
-          }
+        .client-nav-item.is-active .client-nav-icon-wrap {
+          transform: translateY(-1px);
+        }
 
-          .client-nav-label {
-            font-size: 0.65rem;
-            font-weight: 550;
-            color: #8C827A;
-            margin-top: 2px;
-            letter-spacing: -0.01em;
-            transition: color 0.2s ease, font-weight 0.2s ease;
-          }
+        .client-nav-label {
+          font-size: 0.67rem;
+          font-weight: 600;
+          color: #94A3B8;
+          margin-top: 3px;
+          letter-spacing: -0.01em;
+          transition: color 0.18s ease, font-weight 0.18s ease;
+        }
 
-          .client-nav-item.is-active .client-nav-label {
-            color: var(--c-primary, #9C382A);
-            font-weight: 750;
-          }
+        .client-nav-item.is-active .client-nav-label {
+          color: var(--c-primary, #70092B);
+          font-weight: 800;
+        }
 
-          .client-nav-indicator {
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: transparent;
-            margin-top: 2px;
-            transition: all 0.22s ease;
-          }
+        .client-nav-indicator {
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: transparent;
+          margin-top: 3px;
+          transition: background 0.18s ease;
+        }
 
-          .client-nav-item.is-active .client-nav-indicator {
-            background: var(--c-primary, #9C382A);
-            box-shadow: 0 1px 4px rgba(156, 56, 42, 0.5);
-            animation: dotPulse 2.4s infinite ease-in-out;
-          }
+        .client-nav-item.is-active .client-nav-indicator {
+          background: var(--c-primary, #70092B);
+        }
 
-          .client-nav-badge {
-            position: absolute;
-            top: -5px;
-            right: -10px;
-            min-width: 17px;
-            height: 17px;
-            padding: 0 4px;
-            border-radius: 9px;
-            background: linear-gradient(135deg, #C2674F 0%, #9C382A 100%);
-            color: #FFFFFF;
-            font-size: 0.60rem;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid #FFFFFF;
-            box-shadow: 0 2px 7px rgba(156, 56, 42, 0.38);
-            letter-spacing: -0.02em;
-          }
+        .client-nav-badge {
+          position: absolute;
+          top: -5px;
+          right: -10px;
+          min-width: 17px;
+          height: 17px;
+          padding: 0 4px;
+          border-radius: 9px;
+          background: var(--c-primary, #70092B);
+          color: #FFFFFF;
+          font-size: 0.60rem;
+          font-weight: 800;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid #FFFFFF;
+          box-shadow: 0 2px 6px rgba(112, 9, 43, 0.25);
+          letter-spacing: -0.02em;
+        }
 
-          .client-nav-center-slot {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-          }
+        .client-nav-center-slot {
+          flex: 1;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
 
-          .client-nav-qr-trigger {
-            background: none;
-            border: none;
-            padding: 0;
-            cursor: pointer;
-            outline: none;
-            -webkit-tap-highlight-color: transparent;
-            margin-top: -26px;
-            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-          }
+        .client-nav-qr-trigger {
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          outline: none;
+          -webkit-tap-highlight-color: transparent;
+          margin-top: -24px;
+          transition: transform 0.18s ease;
+        }
 
-          .client-nav-qr-trigger:active {
-            transform: scale(0.92) !important;
-          }
+        .client-nav-qr-trigger:active {
+          transform: scale(0.92) !important;
+        }
 
-          .client-nav-qr-inner {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #DE8B76 0%, #B85D43 45%, #9C382A 100%);
-            border: 3.5px solid #FFFFFF;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: qrAuraGlow 3.5s infinite ease-in-out;
-            transition: filter 0.2s ease;
-          }
+        .client-nav-qr-inner {
+          width: 54px;
+          height: 54px;
+          border-radius: 50%;
+          background: var(--c-primary, #70092B);
+          border: 3.5px solid #FFFFFF;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 8px 22px rgba(112, 9, 43, 0.32);
+          transition: filter 0.18s ease, transform 0.18s ease;
+        }
 
-          .client-nav-qr-inner:hover {
-            filter: brightness(1.06);
-          }
+        .client-nav-qr-inner:hover {
+          filter: brightness(1.08);
+        }
       `}</style>
     </div>
   );
