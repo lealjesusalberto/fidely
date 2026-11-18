@@ -10,6 +10,7 @@ import {
   Gift,
   ArrowUpRight,
   ArrowLeft,
+  ArrowRight,
   QrCode,
   CheckCircle2,
   Clock,
@@ -3312,61 +3313,152 @@ export default function ClientPortalView({
               </div>
             </div>
 
-            {/* 3. ACCESO DIRECTO: Directorio de Tiendas Aliadas */}
-            <div
-              onClick={() => {
-                setActiveTab('TIENDAS');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              style={{
-                cursor: 'pointer',
-                background: '#FFFFFF',
-                border: '1.5px solid var(--border-subtle)',
-                borderRadius: '20px',
-                padding: '16px 20px',
+            {/* 3. SECCIÓN: COMERCIOS DESTACADOS / POPULAR MERCHANTS (Carrusel de Logos Circulares) */}
+            <div style={{
+              marginBottom: '24px',
+              background: '#FFFFFF',
+              border: '1.5px solid var(--border-subtle)',
+              borderRadius: '20px',
+              padding: '16px 18px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+            }}>
+              {/* Header de la sección */}
+              <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
-                marginBottom: '20px',
-                transition: 'all 0.18s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--c-primary)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <div style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '14px',
-                  background: 'linear-gradient(135deg, #DE8B76 0%, #9C382A 100%)',
-                  color: '#FFFFFF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  boxShadow: '0 4px 10px rgba(156, 56, 42, 0.25)'
+                marginBottom: '14px',
+                padding: '0 2px'
+              }}>
+                <h3 style={{
+                  fontSize: '1.08rem',
+                  fontWeight: 800,
+                  color: 'var(--text-main, #1F2937)',
+                  margin: 0,
+                  letterSpacing: '-0.02em'
                 }}>
-                  <Store size={22} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: '0.94rem', color: 'var(--text-main)' }}>
-                    Directorio de Tiendas Aliadas
-                  </div>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    Explora los comercios con logo oficial, categoría y recompensas exclusivas
-                  </div>
-                </div>
+                  Comercios Destacados
+                </h3>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('TIENDAS');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#E11D48',
+                    fontSize: '0.84rem',
+                    fontWeight: 750,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '4px 6px',
+                    borderRadius: '8px',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; e.currentTarget.style.transform = 'translateX(2px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateX(0)'; }}
+                  title="Ver todas las tiendas aliadas"
+                >
+                  <span>Ver todas</span>
+                  <ArrowRight size={15} strokeWidth={2.4} />
+                </button>
               </div>
-              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--c-primary)', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                Ver Locales <ChevronRight size={16} />
-              </span>
+
+              {/* Fila horizontal con scroll de comercios circulares */}
+              <div
+                className="popular-merchants-scroll"
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '16px',
+                  overflowX: 'auto',
+                  padding: '4px 2px 6px 2px',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  WebkitOverflowScrolling: 'touch'
+                }}
+              >
+                {approvedStores.length === 0 ? (
+                  <div style={{
+                    padding: '16px 20px',
+                    fontSize: '0.80rem',
+                    color: 'var(--text-muted)',
+                    width: '100%',
+                    textAlign: 'center'
+                  }}>
+                    Aún no hay comercios disponibles.
+                  </div>
+                ) : (
+                  approvedStores.map((st) => {
+                    const cleanName = (st.name || 'Comercio').replace(/^Sucursal\s+/i, '');
+                    return (
+                      <div
+                        key={st.id}
+                        onClick={() => {
+                          const virtualCard = (selectedClient.loyaltyCards || []).find(c => c.storeId === st.id) ||
+                            createStoreLoyaltyCard(st, selectedClient, 0);
+                          setSelectedCardForModal(virtualCard);
+                        }}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          width: '68px',
+                          flexShrink: 0,
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          transition: 'transform 0.18s ease'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                        title={`Ver tarjeta y premios de ${st.name}`}
+                      >
+                        {/* Contenedor Circular del Logo */}
+                        <div style={{
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '50%',
+                          overflow: 'hidden',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04)',
+                          border: '2px solid #FFFFFF',
+                          background: '#FFFFFF',
+                          marginBottom: '6px',
+                          flexShrink: 0
+                        }}>
+                          <StoreLogoBadge
+                            store={st}
+                            size={60}
+                            borderRadius="50%"
+                            showCategoryBadge={false}
+                          />
+                        </div>
+
+                        {/* Nombre del Comercio (centrado y truncado como en la referencia) */}
+                        <span style={{
+                          fontSize: '0.74rem',
+                          fontWeight: 700,
+                          color: 'var(--text-main, #2D2D2D)',
+                          width: '100%',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          lineHeight: 1.2
+                        }}>
+                          {cleanName}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
               </>
             )}

@@ -335,6 +335,15 @@ h6,
   white-space: nowrap !important;
 }
 
+.popular-merchants-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.popular-merchants-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* ==========================================================================
    Admin Modern Sidebar Layout
    ========================================================================== */
