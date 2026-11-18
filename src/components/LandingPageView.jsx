@@ -18,21 +18,22 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { fireRedemptionConfetti } from '../utils/confetti';
+import HeroStoresMapMotion from './HeroStoresMapMotion';
 
 export default function LandingPageView({ onNavigate }) {
   // Real-time Scroll Parallax & Scroll-Driven Observer
   const [scrollY, setScrollY] = useState(0);
 
-  // Dual-Hero Auto-Carousel State (4 seconds cycle)
-  const [activeHeroSlide, setActiveHeroSlide] = useState(0); // 0 = Laptop 3D (Comercio), 1 = Escaneo QR & Smartphone (Cliente)
+  // Triple-Hero Auto-Carousel State (5 seconds cycle)
+  const [activeHeroSlide, setActiveHeroSlide] = useState(0); // 0 = Laptop 3D (Comercio), 1 = Escaneo QR (Cliente), 2 = Tiendas Afiliadas & Mapa (Comunidades)
   const [isSlidePaused, setIsSlidePaused] = useState(false);
 
   useEffect(() => {
     if (isSlidePaused) return;
 
     const timer = setInterval(() => {
-      setActiveHeroSlide((prev) => (prev === 0 ? 1 : 0));
-    }, 4000); // Rota garantizado cada 4 segundos
+      setActiveHeroSlide((prev) => (prev === 2 ? 0 : prev + 1));
+    }, 5000); // Rota garantizado cada 5 segundos
 
     return () => clearInterval(timer);
   }, [isSlidePaused, activeHeroSlide]);
@@ -1168,6 +1169,184 @@ export default function LandingPageView({ onNavigate }) {
             </div>
           </div>
 
+          {/* =========================================================================
+              SLIDE 2: TIENDAS REALES AFILIADAS & MAPA RADAR MOTION GRAPHICS
+              ========================================================================= */}
+          <div className={`hero-slide-pane ${activeHeroSlide === 2 ? 'hero-slide-active' : 'hero-slide-inactive'}`}>
+            <div style={{
+              maxWidth: '1240px',
+              margin: '0 auto',
+              display: 'grid',
+              gridTemplateColumns: '1.05fr 1.15fr',
+              alignItems: 'center',
+              gap: '40px',
+              position: 'relative',
+              zIndex: 1
+            }} className="landing-hero-grid">
+
+              {/* LEFT COLUMN: Focus on real stores, map & trust */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'left' }} className="anim-fade-up">
+
+                {/* Top Badge */}
+                <div>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: '#FFFFFF',
+                    border: '1.5px solid #EADCDA',
+                    padding: '6px 16px',
+                    borderRadius: '9999px',
+                    boxShadow: '0 2px 10px rgba(112, 9, 43, 0.05)'
+                  }}>
+                    <MapPin size={14} color="#70092B" />
+                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#1C1917', letterSpacing: '0.02em' }}>
+                      Red Oficial de Comercios • <span style={{ color: '#70092B' }}>fidely &gt;club&lt;</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Main Headline */}
+                <h1 style={{
+                  fontFamily: 'var(--font-main)',
+                  fontSize: 'clamp(2.5rem, 5vw, 4.2rem)',
+                  fontWeight: 800,
+                  lineHeight: 1.08,
+                  letterSpacing: '-0.035em',
+                  color: '#1C1917',
+                  margin: 0
+                }}>
+                  Tiendas que ya <br />
+                  confían en <br />
+                  <span style={{ color: '#70092B' }}>nosotros</span>
+                </h1>
+
+                {/* Subtitle */}
+                <p style={{
+                  fontSize: 'clamp(1.05rem, 1.8vw, 1.22rem)',
+                  color: '#57534E',
+                  lineHeight: 1.5,
+                  maxWidth: '520px',
+                  margin: 0,
+                  fontWeight: 500
+                }}>
+                  Cafeterías, barberías, pizzerías y calzado ya premian a sus clientes en Caracas, Lara y Bolívar. Comercios reales geolocalizados con alertas automáticas de proximidad.
+                </p>
+
+                {/* Feature Pills */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '4px' }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: '#FFFFFF',
+                    border: '1px solid #EADCDA',
+                    padding: '6px 12px',
+                    borderRadius: '9999px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    color: '#292524'
+                  }}>
+                    <CheckCircle2 size={14} color="#70092B" />
+                    <span>+11 Tiendas Aliadas Activas</span>
+                  </div>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: '#FFFFFF',
+                    border: '1px solid #EADCDA',
+                    padding: '6px 12px',
+                    borderRadius: '9999px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    color: '#292524'
+                  }}>
+                    <CheckCircle2 size={14} color="#70092B" />
+                    <span>100% Tarjetas en Celular</span>
+                  </div>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: '#FFFFFF',
+                    border: '1px solid #EADCDA',
+                    padding: '6px 12px',
+                    borderRadius: '9999px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    color: '#292524'
+                  }}>
+                    <CheckCircle2 size={14} color="#70092B" />
+                    <span>Radar de Proximidad (&lt; 500m)</span>
+                  </div>
+                </div>
+
+                {/* CTA Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginTop: '10px' }} className="landing-hero-ctas">
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('LOGIN')}
+                    className="btn-pill-wine"
+                    title="Sumar mi tienda a la red de comercios"
+                  >
+                    <span>Sumar mi tienda</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 800 }}>→</span>
+                  </button>
+
+                  <a
+                    href="https://fidely-video-promo.web.app/tiendas.html"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-pill-cream"
+                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    title="Ver showcase y video de tiendas reales"
+                  >
+                    <span>Ver Showcase de Tiendas</span>
+                    <ArrowUpRight size={15} />
+                  </a>
+                </div>
+
+                {/* Social Proof */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }}>
+                  <div style={{ display: 'flex', marginLeft: '6px' }}>
+                    {['#5C3A21', '#1E293B', '#111827', '#15803D'].map((col, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '50%',
+                          background: col,
+                          border: '2px solid #FFFFFF',
+                          marginLeft: idx === 0 ? '0' : '-8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#FFFFFF',
+                          fontSize: '0.68rem',
+                          fontWeight: 800
+                        }}
+                      >
+                        ✓
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#78716C', fontWeight: 600 }}>
+                    <strong style={{ color: '#1C1917' }}>Comercios en vivo</strong> acumulando visitas y fidelizando clientes
+                  </div>
+                </div>
+
+              </div>
+
+              {/* RIGHT COLUMN: The Motion Graphics Stores & Radar Map Component */}
+              <div style={{ position: 'relative', width: '100%', minHeight: '460px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <HeroStoresMapMotion onNavigate={onNavigate} />
+              </div>
+
+            </div>
+          </div>
+
         </div>
 
         {/* =========================================================================
@@ -1217,6 +1396,28 @@ export default function LandingPageView({ onNavigate }) {
           >
             <span>📱 2. Escaneo QR en Mostrador</span>
             {activeHeroSlide === 1 && (
+              <div style={{
+                width: '32px',
+                height: '4px',
+                borderRadius: '9999px',
+                background: 'rgba(255,255,255,0.3)',
+                overflow: 'hidden',
+                marginLeft: '4px'
+              }}>
+                <div key={activeHeroSlide} className="hero-progress-fill" />
+              </div>
+            )}
+          </button>
+
+          {/* Button Slide 2 */}
+          <button
+            type="button"
+            onClick={() => handleSelectHeroSlide(2)}
+            className={`hero-slide-dot ${activeHeroSlide === 2 ? 'active' : ''}`}
+            title="Ver Hero 3: Tiendas que ya confían (Mapa Radar Motion Graphics)"
+          >
+            <span>🗺️ 3. Tiendas Aliadas & Mapa</span>
+            {activeHeroSlide === 2 && (
               <div style={{
                 width: '32px',
                 height: '4px',
