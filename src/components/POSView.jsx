@@ -8283,6 +8283,10 @@ export default function POSView({
               onNotify={onNotify}
               onLogout={onLogout}
               isEmbedded={true}
+              onBack={() => {
+                setActiveTab('CHECKOUT');
+                setIsMobilePosMode(true);
+              }}
             />
           )}
 
