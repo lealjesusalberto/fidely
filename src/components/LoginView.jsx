@@ -184,7 +184,7 @@ export default function LoginView({
             storeId: storeToLink.id,
             storeName: storeToLink.name,
             logo: storeToLink.logo || '',
-            cardColor: storeToLink.cardColor || '#9C382A',
+            cardColor: storeToLink.cardColor || '#70092B',
             cardGradient: storeToLink.cardGradient || '',
             currentStamps: 0,
             stampsTarget: Number(storeToLink.stampsTarget || 6),
@@ -306,7 +306,7 @@ export default function LoginView({
         stampsTarget: 6,
         rewardTitle: 'Corte o Servicio de Fidelidad',
         cardColor: '#70092B',
-        cardGradient: '#9C382A',
+        cardGradient: '#B85D43',
         stampIcon: 'star',
         minPurchaseUsd: 5
       };
@@ -651,7 +651,7 @@ export default function LoginView({
               storeId: storeToLink.id,
               storeName: storeToLink.name,
               logo: storeToLink.logo || '',
-              cardColor: storeToLink.cardColor || '#9C382A',
+              cardColor: storeToLink.cardColor || '#70092B',
               cardGradient: storeToLink.cardGradient || '',
               currentStamps: 0,
               stampsTarget: Number(storeToLink.stampsTarget || 6),
@@ -1300,7 +1300,7 @@ export default function LoginView({
                   height: '74px',
                   borderRadius: '22px',
                   margin: '0 auto 16px auto',
-                  background: targetStore?.cardColor || 'linear-gradient(135deg, #DE8B76 0%, #9C382A 100%)',
+                  background: targetStore?.cardColor || 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -2469,14 +2469,14 @@ export default function LoginView({
                   <div style={{
                     width: '42px',
                     height: '42px',
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #DE8B76 0%, #9C382A 100%)',
+                    borderRadius: '14px',
+                    background: 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
                     color: '#FFFFFF',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
-                    boxShadow: '0 4px 10px rgba(156, 56, 42, 0.22)'
+                    boxShadow: '0 4px 10px rgba(112, 9, 43, 0.22)'
                   }}>
                     <User size={20} />
                   </div>
@@ -2767,7 +2767,7 @@ export default function LoginView({
                       width: '46px',
                       height: '46px',
                       borderRadius: '14px',
-                      background: 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)',
+                      background: 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
                       color: '#FFFFFF',
                       display: 'flex',
                       alignItems: 'center',
@@ -3039,7 +3039,7 @@ export default function LoginView({
                       borderRadius: '12px',
                       fontWeight: 800,
                       fontSize: '0.85rem',
-                      background: 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)',
+                      background: 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',

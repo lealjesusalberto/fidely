@@ -4707,7 +4707,7 @@ service cloud.firestore {
                           type="button"
                           onClick={() => handleRejectReward(reward)}
                           className="btn btn-secondary"
-                          style={{ flex: 1, padding: '8px', fontSize: '0.78rem', color: '#9C382A' }}
+                          style={{ flex: 1, padding: '8px', fontSize: '0.78rem', color: '#70092B' }}
                         >
                           <X size={14} />
                           <span>Rechazar</span>
@@ -5508,7 +5508,7 @@ service cloud.firestore {
                   width: '36px',
                   height: '36px',
                   borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #DE8B76 0%, #9C382A 100%)',
+                  background: 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -7145,7 +7145,7 @@ service cloud.firestore {
                   justifyContent: 'center',
                   flexShrink: 0
                 }}>
-                  <CreditCard size={20} color="var(--c-primary, #9C382A)" />
+                  <CreditCard size={20} color="var(--c-primary, #70092B)" />
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1E293B', margin: 0, lineHeight: 1.2, wordBreak: 'break-word' }}>

@@ -441,7 +441,7 @@ export default function StoreSubscriptionPaywallView({
               boxShadow: '0 1px 4px rgba(0,0,0,0.04)'
             }}
           >
-            <ArrowLeft size={16} color="var(--c-primary, #9C382A)" />
+            <ArrowLeft size={16} color="var(--c-primary, #70092B)" />
             <span>← Volver al Terminal POS</span>
           </button>
         </div>
@@ -465,7 +465,7 @@ export default function StoreSubscriptionPaywallView({
               width: '36px',
               height: '36px',
               borderRadius: '10px',
-              background: 'var(--c-primary, #9C382A)',
+              background: 'var(--c-primary, #70092B)',
               color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
@@ -477,7 +477,7 @@ export default function StoreSubscriptionPaywallView({
             </div>
             <div>
               <div style={{ fontSize: '1rem', fontWeight: 900, color: '#1E293B', letterSpacing: '-0.3px' }}>
-                fidely <span style={{ color: 'var(--c-primary, #9C382A)' }}>CLUB</span>
+                fidely <span style={{ color: 'var(--c-primary, #70092B)' }}>CLUB</span>
               </div>
               <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600 }}>
                 Portal de Suscripciones Comercios
@@ -539,7 +539,7 @@ export default function StoreSubscriptionPaywallView({
               ? 'linear-gradient(90deg, #15803D 0%, #16A34A 100%)'
               : isInTrial
                 ? 'linear-gradient(90deg, #0284C7 0%, #0369A1 100%)'
-                : 'linear-gradient(90deg, #70092B 0%, #9C382A 100%)'
+                : 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)'
           }}>
             <div className="subpay-header-main">
               <div className="subpay-header-icon">
@@ -604,7 +604,7 @@ export default function StoreSubscriptionPaywallView({
             <div className="subpay-price-box">
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--c-primary, #9C382A)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--c-primary, #70092B)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     Membresía Básica POS
                   </span>
                   <span style={{
@@ -645,7 +645,7 @@ export default function StoreSubscriptionPaywallView({
               width: '100%'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <Smartphone size={18} color="var(--c-primary, #9C382A)" />
+                <Smartphone size={18} color="var(--c-primary, #70092B)" />
                 <h3 style={{ fontSize: '0.96rem', fontWeight: 800, color: '#1E293B', margin: 0 }}>
                   Datos de Pago Móvil Oficial
                 </h3>
@@ -704,7 +704,7 @@ export default function StoreSubscriptionPaywallView({
                 <div className="subpay-pm-item">
                   <div className="subpay-pm-item-text">
                     <div style={{ fontSize: '0.66rem', color: '#64748B', fontWeight: 700 }}>Monto a Transferir</div>
-                    <div className="subpay-pm-item-val" style={{ color: 'var(--c-primary, #9C382A)' }}>
+                    <div className="subpay-pm-item-val" style={{ color: 'var(--c-primary, #70092B)' }}>
                       Bs. {details.formattedVes}
                     </div>
                   </div>
@@ -897,7 +897,7 @@ export default function StoreSubscriptionPaywallView({
                     borderRadius: '10px',
                     fontWeight: 800,
                     fontSize: '0.88rem',
-                    background: 'var(--c-primary, #9C382A)',
+                    background: 'var(--c-primary, #70092B)',
                     color: '#FFFFFF',
                     border: 'none',
                     display: 'inline-flex',

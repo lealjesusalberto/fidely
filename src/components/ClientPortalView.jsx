@@ -857,7 +857,7 @@ export default function ClientPortalView({
     const storeName = card.storeName || 'Comercio Aliado';
     const storeId = card.storeId || card.id;
     const defaultRewardTitle = card.rewardTitle || 'Premio de Fidelidad';
-    const cardColor = card.cardColor || '#9C382A';
+    const cardColor = card.cardColor || '#70092B';
     const stampIcon = card.stampIcon || 'star';
     const logo = card.logo || null;
 
@@ -1754,7 +1754,7 @@ export default function ClientPortalView({
       {/* Realtime Push Notification Banner (Foreground Alert) */}
       {activePushAlert && (
         <div style={{
-          background: 'linear-gradient(135deg, #9C382A 0%, #B85D43 100%)',
+          background: 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
           color: '#FFFFFF',
           padding: '12px 20px',
           boxShadow: '0 8px 24px rgba(156, 56, 42, 0.25)',
@@ -2042,11 +2042,11 @@ export default function ClientPortalView({
                           style={{
                             position: 'relative',
                             overflow: 'hidden',
-                            borderRadius: '20px',
-                            background: `linear-gradient(135deg, ${card.cardColor || '#9C382A'} 0%, ${card.cardGradient || '#DE8B76'} 100%)`,
-                            padding: '18px 20px',
+                            borderRadius: '24px',
+                            background: `linear-gradient(135deg, ${card.cardColor || '#70092B'} 0%, ${card.cardGradient || '#B85D43'} 100%)`,
+                            padding: '20px',
                             color: '#FFFFFF',
-                            boxShadow: isFeatured ? '0 10px 24px rgba(0,0,0,0.18), 0 0 0 2.5px #1A1A1A' : '0 6px 18px rgba(0,0,0,0.10)',
+                            boxShadow: isFeatured ? '0 10px 24px rgba(112, 9, 43, 0.22), 0 0 0 2.5px var(--c-primary, #70092B)' : '0 6px 18px rgba(0,0,0,0.06)',
                             transition: 'transform 0.15s ease'
                           }}
                         >
@@ -2095,7 +2095,7 @@ export default function ClientPortalView({
                                 {card.logo ? (
                                   <img src={card.logo} alt={card.storeName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
-                                  <span style={{ fontWeight: 900, color: card.cardColor || '#9C382A', fontSize: '1rem' }}>
+                                  <span style={{ fontWeight: 900, color: card.cardColor || '#70092B', fontSize: '1rem' }}>
                                     {(card.storeName || 'TI').slice(0, 2).toUpperCase()}
                                   </span>
                                 )}
@@ -2773,14 +2773,14 @@ export default function ClientPortalView({
                     <div style={{
                       width: '48px',
                       height: '48px',
-                      borderRadius: '14px',
-                      background: 'linear-gradient(135deg, #DE8B76 0%, #9C382A 100%)',
+                      borderRadius: '16px',
+                      background: 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
                       color: '#FFFFFF',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
-                      boxShadow: '0 4px 14px rgba(156, 56, 42, 0.25)'
+                      boxShadow: '0 4px 14px rgba(112, 9, 43, 0.25)'
                     }}>
                       <Award size={26} />
                     </div>
@@ -2841,7 +2841,7 @@ export default function ClientPortalView({
                     <div>
                       <div
                         style={{
-                          background: `linear-gradient(135deg, ${card.cardColor || '#9C382A'} 0%, ${card.cardGradient || '#DE8B76'} 100%)`,
+                          background: `linear-gradient(135deg, ${card.cardColor || '#70092B'} 0%, ${card.cardGradient || '#B85D43'} 100%)`,
                           borderRadius: '24px',
                           padding: '22px',
                           color: '#FFFFFF',
@@ -2922,7 +2922,7 @@ export default function ClientPortalView({
                               {effectiveLogo ? (
                                 <img src={effectiveLogo} alt={card.storeName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                               ) : (
-                                <span style={{ fontWeight: 900, color: card.cardColor || '#9C382A', fontSize: '1rem' }}>
+                                <span style={{ fontWeight: 900, color: card.cardColor || '#70092B', fontSize: '1rem' }}>
                                   {(card.storeName || 'TI').slice(0, 2).toUpperCase()}
                                 </span>
                               )}
@@ -3071,7 +3071,7 @@ export default function ClientPortalView({
                                     </span>
                                   )}
                                   {isStamped ? (
-                                    renderStampIcon(card.stampIcon, 16, card.cardColor || '#9C382A')
+                                    renderStampIcon(card.stampIcon, 16, card.cardColor || '#70092B')
                                   ) : (
                                     <span style={{ fontSize: '0.68rem', opacity: 0.75, fontWeight: 800 }}>
                                       {idx + 1}
@@ -3106,7 +3106,7 @@ export default function ClientPortalView({
                                   borderRadius: '10px',
                                   background: '#FFFFFF',
                                   border: 'none',
-                                  color: card.cardColor || '#9C382A',
+                                  color: card.cardColor || '#70092B',
                                   fontSize: '0.76rem',
                                   fontWeight: 800,
                                   cursor: 'pointer',
@@ -3159,7 +3159,7 @@ export default function ClientPortalView({
                                   borderRadius: '10px',
                                   background: '#FFFFFF',
                                   border: 'none',
-                                  color: card.cardColor || '#9C382A',
+                                  color: card.cardColor || '#70092B',
                                   fontSize: '0.80rem',
                                   fontWeight: 850,
                                   cursor: 'pointer',

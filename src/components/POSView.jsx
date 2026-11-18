@@ -2562,7 +2562,7 @@ export default function POSView({
                     {safeStore.name}
                   </h2>
                   <span style={{
-                    background: 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)',
+                    background: 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
                     color: '#FFFFFF',
                     borderRadius: '9999px',
                     padding: '1px 7px',
@@ -2593,7 +2593,7 @@ export default function POSView({
                 padding: '6px 12px',
                 borderRadius: '9999px',
                 background: '#FAF8F5',
-                color: 'var(--c-primary, #9C382A)',
+                color: 'var(--c-primary, #70092B)',
                 border: '1.5px solid rgba(156, 56, 42, 0.25)',
                 fontWeight: 800,
                 fontSize: '0.74rem',
@@ -2632,7 +2632,7 @@ export default function POSView({
                 style={{
                   padding: '6px 12px',
                   borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)',
+                  background: 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
                   color: '#FFFFFF',
                   border: 'none',
                   fontSize: '0.72rem',
@@ -2665,7 +2665,7 @@ export default function POSView({
                   padding: '11px 8px',
                   borderRadius: '12px',
                   border: 'none',
-                  background: mobilePosTab === 'QR' ? 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)' : 'transparent',
+                  background: mobilePosTab === 'QR' ? 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)' : 'transparent',
                   color: mobilePosTab === 'QR' ? '#FFFFFF' : '#475569',
                   fontWeight: 800,
                   fontSize: '0.86rem',
@@ -2689,7 +2689,7 @@ export default function POSView({
                   padding: '11px 8px',
                   borderRadius: '12px',
                   border: 'none',
-                  background: mobilePosTab === 'REQUESTS' ? 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)' : 'transparent',
+                  background: mobilePosTab === 'REQUESTS' ? 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)' : 'transparent',
                   color: mobilePosTab === 'REQUESTS' ? '#FFFFFF' : '#475569',
                   fontWeight: 800,
                   fontSize: '0.86rem',
@@ -2762,7 +2762,7 @@ export default function POSView({
                         padding: '3px 10px',
                         borderRadius: '9999px',
                         background: 'var(--c-secondary-soft, #FAF8F5)',
-                        color: 'var(--c-primary, #9C382A)',
+                        color: 'var(--c-primary, #70092B)',
                         fontWeight: 800,
                         fontSize: '0.72rem'
                       }}>
@@ -2809,7 +2809,7 @@ export default function POSView({
                         gridColumn: 'span 2',
                         padding: '10px 14px',
                         borderRadius: '12px',
-                        background: 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)',
+                        background: 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
                         color: '#FFFFFF',
                         border: 'none',
                         fontWeight: 800,
@@ -2882,7 +2882,7 @@ export default function POSView({
                       style={{
                         background: 'transparent',
                         border: 'none',
-                        color: 'var(--c-primary, #9C382A)',
+                        color: 'var(--c-primary, #70092B)',
                         fontSize: '0.74rem',
                         fontWeight: 700,
                         display: 'inline-flex',
@@ -2972,7 +2972,7 @@ export default function POSView({
                         gap: '7px',
                         padding: '11px 22px',
                         borderRadius: '9999px',
-                        background: 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)',
+                        background: 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
                         color: '#FFFFFF',
                         border: 'none',
                         fontWeight: 800,
@@ -3074,7 +3074,7 @@ export default function POSView({
                                 {req.clientDocId && (
                                   <span style={{
                                     background: 'var(--c-secondary-soft, #FAF8F5)',
-                                    color: 'var(--c-primary, #9C382A)',
+                                    color: 'var(--c-primary, #70092B)',
                                     fontSize: '0.70rem',
                                     fontWeight: 800,
                                     padding: '1px 6px',
@@ -3269,7 +3269,7 @@ export default function POSView({
                 cursor: 'pointer'
               }}
             >
-              <Camera size={15} color="var(--c-primary, #9C382A)" />
+              <Camera size={15} color="var(--c-primary, #70092B)" />
               <span>Escanear Tarjeta de Cliente</span>
             </button>
 
@@ -3760,7 +3760,7 @@ export default function POSView({
                 padding: '6px 14px',
                 fontSize: '0.80rem',
                 fontWeight: 800,
-                background: 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)',
+                background: 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
                 color: '#FFFFFF',
                 borderRadius: '9999px',
                 border: 'none',
@@ -3798,7 +3798,7 @@ export default function POSView({
                 gap: '5px',
                 border: '1.5px solid rgba(222, 139, 118, 0.4)',
                 background: '#FAF8F5',
-                color: 'var(--c-primary, #9C382A)',
+                color: 'var(--c-primary, #70092B)',
                 fontWeight: 800
               }}
               title="Iniciar o repetir el tour guiado del panel"
@@ -3817,7 +3817,7 @@ export default function POSView({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '5px',
-                background: 'var(--c-primary, #9C382A)',
+                background: 'var(--c-primary, #70092B)',
                 color: '#FFFFFF',
                 border: 'none',
                 fontWeight: 800,
@@ -4193,7 +4193,7 @@ export default function POSView({
                 style={{
                   padding: '10px 18px',
                   borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #70092B 0%, #9C382A 100%)',
+                  background: 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
                   color: '#FFFFFF',
                   border: 'none',
                   fontWeight: 900,
@@ -4490,7 +4490,7 @@ export default function POSView({
                         fontWeight: 800,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
-                        background: 'var(--c-primary, #9C382A)',
+                        background: 'var(--c-primary, #70092B)',
                         color: '#FFFFFF',
                         padding: '3px 10px',
                         borderRadius: '999px'
@@ -4532,7 +4532,7 @@ export default function POSView({
                     }}
                     title="Ver o repetir el tour guiado interactivo"
                   >
-                    <Sparkles size={18} color="var(--c-primary, #9C382A)" />
+                    <Sparkles size={18} color="var(--c-primary, #70092B)" />
                     <span>🚀 Iniciar Tour Guiado</span>
                   </button>
 
@@ -4812,7 +4812,7 @@ export default function POSView({
                       padding: '11px',
                       borderRadius: '12px',
                       background: 'var(--c-secondary-soft, #F7EFE8)',
-                      color: 'var(--c-primary, #9C382A)',
+                      color: 'var(--c-primary, #70092B)',
                       border: '1.5px solid #EDE2D5',
                       fontWeight: 800,
                       fontSize: '0.86rem',
@@ -7989,7 +7989,7 @@ export default function POSView({
                                       fontSize: '0.66rem',
                                       fontWeight: 800,
                                       background: 'var(--c-secondary-soft, #F7EFE8)',
-                                      color: 'var(--c-primary, #9C382A)'
+                                      color: 'var(--c-primary, #70092B)'
                                     }}>
                                       {p.badgeType || 'PROMO'}
                                     </span>
@@ -8074,8 +8074,8 @@ export default function POSView({
                                         fontSize: '0.72rem',
                                         fontWeight: 800,
                                         background: isMonthlyLimitReached || isCooldownActive ? '#F1F5F9' : 'var(--c-secondary-soft, #F7EFE8)',
-                                        color: isMonthlyLimitReached || isCooldownActive ? '#94A3B8' : 'var(--c-primary, #9C382A)',
-                                        border: isMonthlyLimitReached || isCooldownActive ? '1px solid #E2E8F0' : '1.5px solid var(--c-primary, #9C382A)',
+                                        color: isMonthlyLimitReached || isCooldownActive ? '#94A3B8' : 'var(--c-primary, #70092B)',
+                                        border: isMonthlyLimitReached || isCooldownActive ? '1px solid #E2E8F0' : '1.5px solid var(--c-primary, #70092B)',
                                         cursor: isMonthlyLimitReached || isCooldownActive ? 'not-allowed' : 'pointer',
                                         display: 'inline-flex',
                                         alignItems: 'center',
@@ -8232,7 +8232,7 @@ export default function POSView({
                                       borderRadius: '8px',
                                       fontSize: '0.74rem',
                                       fontWeight: 800,
-                                      color: 'var(--c-primary, #9C382A)',
+                                      color: 'var(--c-primary, #70092B)',
                                       borderColor: 'var(--c-primary-soft, #EDE2D5)',
                                       background: '#FFFFFF',
                                       display: 'inline-flex',
@@ -10509,7 +10509,7 @@ export default function POSView({
                 <div
                   style={{width:`42px`,height:`42px`,borderRadius:`12px`,background:`var(--c-secondary-soft, #F7EFE8)`,display:`flex`,alignItems:`center`,justifyContent:`center`,flexShrink:0}}
                 >
-                  <BellRing size={22} color="var(--c-primary, #9C382A)" />
+                  <BellRing size={22} color="var(--c-primary, #70092B)" />
                 </div>
                 <div>
                   <h3 style={{fontSize:`1.15rem`,fontWeight:800,color:`#1E293B`,margin:0,lineHeight:1.25}}>Reenviar Notificación Push</h3>
@@ -10539,7 +10539,7 @@ export default function POSView({
             <div
               style={{background:`#F8FAFC`,border:`1px solid #E2E8F0`,borderRadius:`12px`,padding:`12px 14px`,display:`flex`,alignItems:`flex-start`,gap:`10px`,marginBottom:`20px`}}
             >
-              <Megaphone size={18} color="var(--c-primary, #9C382A)" style={{flexShrink:0,marginTop:`2px`}} />
+              <Megaphone size={18} color="var(--c-primary, #70092B)" style={{flexShrink:0,marginTop:`2px`}} />
               <div style={{fontSize:`0.82rem`,color:`#334155`,lineHeight:1.45}}>
                 Esta acción reenviará la alerta push a los dispositivos móviles y navegadores de tus clientes.
                 <div style={{marginTop:`4px`,fontWeight:700,color:`#0F172A`}}>Consumirá 1 envío de tu cupo mensual ({Kn+1}/{Hn>0?Hn:`∞`}).</div>
@@ -10560,7 +10560,7 @@ export default function POSView({
                 onClick={Xn}
                 disabled={isSendingPromo}
                 className="btn"
-                style={{padding:`10px 20px`,borderRadius:`10px`,fontWeight:800,fontSize:`0.88rem`,background:`var(--c-primary, #9C382A)`,color:`#FFFFFF`,border:`none`,display:`inline-flex`,alignItems:`center`,gap:`8px`,boxShadow:`0 4px 12px rgba(156, 56, 42, 0.3)`,cursor:isSendingPromo?`not-allowed`:`pointer`}}
+                style={{padding:`10px 20px`,borderRadius:`10px`,fontWeight:800,fontSize:`0.88rem`,background:`var(--c-primary, #70092B)`,color:`#FFFFFF`,border:`none`,display:`inline-flex`,alignItems:`center`,gap:`8px`,boxShadow:`0 4px 12px rgba(156, 56, 42, 0.3)`,cursor:isSendingPromo?`not-allowed`:`pointer`}}
               >
                 {
                   isSendingPromo ? (

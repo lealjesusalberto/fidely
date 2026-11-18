@@ -85,8 +85,8 @@ export default function LandingPageView({ onNavigate }) {
   const [simCurrentStamps, setSimCurrentStamps] = useState(3);
   const [simRewardTitle] = useState('Café Americano + Croissant de Cortesía');
   const [simStoreName] = useState('Café & Bakery Gourmet');
-  const [simCardColor, setSimCardColor] = useState('#9C382A');
-  const [simCardGradient, setSimCardGradient] = useState('#DE8B76');
+  const [simCardColor, setSimCardColor] = useState('#70092B');
+  const [simCardGradient, setSimCardGradient] = useState('#B85D43');
 
   // FAQ Accordion State
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
@@ -1320,7 +1320,7 @@ export default function LandingPageView({ onNavigate }) {
                 </label>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                   {[
-                    { color: '#9C382A', gradient: '#DE8B76', name: 'Terracota' },
+                    { color: '#70092B', gradient: '#B85D43', name: 'Vinotinto & Terracota' },
                     { color: '#1E3A8A', gradient: '#60A5FA', name: 'Azul Zafiro' },
                     { color: '#065F46', gradient: '#34D399', name: 'Esmeralda' },
                     { color: '#78350F', gradient: '#FBBF24', name: 'Café & Oro' },
