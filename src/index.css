@@ -74,6 +74,9 @@ html {
   margin: 0;
   padding: 0;
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
 }
 
 body {
@@ -84,7 +87,9 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: clip;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
   margin: 0;
   padding: 0;
 }
@@ -93,6 +98,9 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
 }
 
 /* Typography (Matching virtual-room-tour-360) */
@@ -340,6 +348,7 @@ h6,
   width: 100%;
   box-sizing: border-box;
   min-height: calc(100vh - 70px);
+  overflow-x: hidden;
 }
 
 .admin-sidebar {
@@ -431,9 +440,12 @@ h6,
 .admin-main-content {
   flex: 1;
   min-width: 0;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   gap: 18px;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 @media (max-width: 900px) {
@@ -686,13 +698,23 @@ h6,
 
 @media (max-width: 860px) {
   .admin-store-card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 12px 14px !important;
+  }
+  .admin-store-card-main-info {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
   }
   .admin-store-card-badges {
-    width: 100%;
-    justify-content: space-between;
+    width: 100% !important;
+    max-width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
   }
 }
 

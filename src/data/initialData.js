@@ -18,7 +18,7 @@ export const DEFAULT_CONFIG = {
   vesExchangeRate: 884.75, // RN-04: Tasa de cambio oficial USD/VES (DolarApi BCV)
   allowPartialReturns: true,
   // Membresías de Tiendas & Período de Prueba
-  storeTrialMonths: 3, // Meses de prueba gratis (configurable por el admin: 0 = sin prueba, 1 = 1 mes, etc.)
+  storeTrialMonths: 0, // Meses de prueba gratis (configurable por el admin: 0 = sin prueba / pago inmediato, 1 = 1 mes, etc.)
   subscriptionPriceUsd: 5.0, // $5 USD mensual a tasa oficial BCV
   subscriptionPagoMovilBank: 'Banco de Venezuela (0102)',
   subscriptionPagoMovilPhone: '04242098250',

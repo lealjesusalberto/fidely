@@ -1166,8 +1166,8 @@ export default function AdminPanelView({
     const maxNum = existingNumbers.length > 0 ? Math.max(...existingNumbers, 0) : 0;
     const newStoreId = `STR-${String(maxNum + 1).padStart(2, '0')}`;
     const now = new Date();
-    const trialMonths = config?.storeTrialMonths !== undefined ? parseInt(config.storeTrialMonths, 10) : 3;
-    const trialEnds = new Date(now.getTime() + (trialMonths * 30 * 24 * 60 * 60 * 1000));
+    const trialMonths = config?.storeTrialMonths !== undefined ? Math.max(0, parseInt(config.storeTrialMonths, 10) || 0) : 0;
+    const trialEnds = trialMonths > 0 ? new Date(now.getTime() + (trialMonths * 30 * 24 * 60 * 60 * 1000)) : now;
     const newStore = {
       id: newStoreId,
       name: storeForm.name.trim(),
@@ -1693,7 +1693,7 @@ service cloud.firestore {
         allowPushResend: configForm.allowPushResend !== false,
         pushResendCooldownHours: parseInt(configForm.pushResendCooldownHours, 10) || 24,
         // Membresía POS & Período de Prueba de Tiendas
-        storeTrialMonths: configForm.storeTrialMonths !== undefined ? parseInt(configForm.storeTrialMonths, 10) : 3,
+        storeTrialMonths: configForm.storeTrialMonths !== undefined ? Math.max(0, parseInt(configForm.storeTrialMonths, 10) || 0) : 0,
         subscriptionPriceUsd: parseFloat(configForm.subscriptionPriceUsd) >= 0 ? parseFloat(configForm.subscriptionPriceUsd) : 5.0,
         subscriptionPagoMovilBank: configForm.subscriptionPagoMovilBank || 'Banco de Venezuela (0102)',
         subscriptionPagoMovilPhone: configForm.subscriptionPagoMovilPhone || '04242098250',
@@ -2356,22 +2356,34 @@ service cloud.firestore {
           .reduce((sum, p) => sum + (parseFloat(p.amountUsd) || 5), 0);
 
         return (
-          <div className="glass-panel" style={{ padding: 'clamp(12px, 3vw, 22px)' }}>
+          <div className="glass-panel" style={{ padding: 'clamp(10px, 3vw, 22px)', maxWidth: '100%', boxSizing: 'border-box', overflowX: 'hidden' }}>
             <style>{`
               .admin-payments-kpis {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
                 gap: 12px;
                 margin-bottom: 20px;
                 width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+              }
+              .admin-payments-kpis > div {
+                min-width: 0;
+                overflow: hidden;
                 box-sizing: border-box;
               }
               .admin-payments-table-view {
                 display: block;
                 width: 100%;
+                max-width: 100%;
+                overflow-x: auto;
+                box-sizing: border-box;
               }
               .admin-payments-cards-view {
                 display: none;
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
               }
               .admin-payments-filters-row {
                 display: flex;
@@ -2381,50 +2393,33 @@ service cloud.firestore {
                 gap: 12px;
                 margin-bottom: 16px;
                 width: 100%;
+                max-width: 100%;
+                min-width: 0;
                 box-sizing: border-box;
               }
               .admin-payments-filter-pills {
                 display: flex;
                 gap: 4px;
                 background: #FAF8F5;
-                padding: 3px;
-                borderRadius: 10px;
+                padding: 4px;
+                border-radius: 10px;
                 border: 1px solid var(--border-subtle);
                 max-width: 100%;
+                min-width: 0;
                 box-sizing: border-box;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+              }
+              .admin-payments-filter-pills button {
+                flex-shrink: 0;
               }
               .admin-payments-search {
                 width: 280px;
+                max-width: 100%;
                 box-sizing: border-box;
               }
 
-              @media (max-width: 768px) {
-                .admin-payments-kpis {
-                  grid-template-columns: repeat(2, 1fr) !important;
-                  gap: 8px !important;
-                  margin-bottom: 14px !important;
-                }
-                .admin-payments-kpis > div {
-                  padding: 10px 12px !important;
-                }
-                .admin-payments-kpis > div > div:nth-child(2) {
-                  font-size: 1.15rem !important;
-                }
-                .admin-payments-filters-row {
-                  flex-direction: column !important;
-                  align-items: stretch !important;
-                  gap: 10px !important;
-                }
-                .admin-payments-filter-pills {
-                  overflow-x: auto !important;
-                  white-space: nowrap !important;
-                  width: 100% !important;
-                  padding-bottom: 4px !important;
-                  -webkit-overflow-scrolling: touch !important;
-                }
-                .admin-payments-search {
-                  width: 100% !important;
-                }
+              @media (max-width: 960px) {
                 .admin-payments-table-view {
                   display: none !important;
                 }
@@ -2433,19 +2428,72 @@ service cloud.firestore {
                   flex-direction: column !important;
                   gap: 10px !important;
                   width: 100% !important;
+                  max-width: 100% !important;
+                  box-sizing: border-box !important;
                   margin-bottom: 16px !important;
+                }
+                .admin-payments-kpis {
+                  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                  gap: 8px !important;
+                  margin-bottom: 14px !important;
+                }
+                .admin-payments-kpis > div {
+                  padding: 10px 12px !important;
+                  min-width: 0 !important;
+                  overflow: hidden !important;
+                }
+                .admin-payments-kpis > div > div:nth-child(2) {
+                  font-size: clamp(1rem, 3.5vw, 1.25rem) !important;
+                  word-break: break-all !important;
+                }
+                .admin-payments-filters-row {
+                  flex-direction: column !important;
+                  align-items: stretch !important;
+                  gap: 10px !important;
+                }
+                .admin-payments-filter-pills {
+                  width: 100% !important;
+                  overflow-x: auto !important;
+                  white-space: nowrap !important;
+                  padding-bottom: 4px !important;
+                  -webkit-overflow-scrolling: touch !important;
+                }
+                .admin-payments-filter-pills button {
+                  flex-shrink: 0 !important;
+                }
+                .admin-payments-search {
+                  width: 100% !important;
+                }
+              }
+
+              @media (max-width: 480px) {
+                .admin-payments-kpis {
+                  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                  gap: 6px !important;
+                }
+                .admin-payments-kpis > div {
+                  padding: 8px 10px !important;
+                }
+                .admin-payments-kpis > div > div:nth-child(1) {
+                  font-size: 0.62rem !important;
+                }
+                .admin-payments-kpis > div > div:nth-child(2) {
+                  font-size: 0.94rem !important;
+                }
+                .admin-payments-kpis > div > div:nth-child(3) {
+                  font-size: 0.60rem !important;
                 }
               }
             `}</style>
 
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px', marginBottom: '18px' }}>
-              <div>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <CreditCard size={22} color="var(--c-primary)" />
-                  Control de Pagos Móvil & Membresías POS
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '16px', width: '100%', boxSizing: 'border-box' }}>
+              <div style={{ minWidth: 0, flex: '1 1 260px' }}>
+                <h2 style={{ fontSize: 'clamp(1.05rem, 4vw, 1.25rem)', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px', wordBreak: 'break-word' }}>
+                  <CreditCard size={20} color="var(--c-primary)" style={{ flexShrink: 0 }} />
+                  <span>Control de Pagos Móvil & Membresías POS</span>
                 </h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.80rem', margin: '4px 0 0 0' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', margin: '4px 0 0 0', lineHeight: 1.4, wordBreak: 'break-word' }}>
                   Concilia y valida los pagos de $5 USD (tasa BCV) reportados por los comercios con referencia, teléfono y banco de origen.
                 </p>
               </div>
@@ -2454,18 +2502,20 @@ service cloud.firestore {
                 <div style={{
                   background: '#FEF3C7',
                   border: '1.5px solid #FCD34D',
-                  padding: '8px 14px',
+                  padding: '8px 12px',
                   borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
                   color: '#92400E',
-                  fontSize: '0.82rem',
+                  fontSize: '0.78rem',
                   fontWeight: 800,
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  maxWidth: '100%',
+                  wordBreak: 'break-word'
                 }}>
-                  <Clock size={16} />
-                  <span>{totalPending} comprobante(s) esperando tu validación</span>
+                  <Clock size={15} style={{ flexShrink: 0 }} />
+                  <span>{totalPending} comprobante(s) esperando validación</span>
                 </div>
               )}
             </div>
@@ -2623,19 +2673,20 @@ service cloud.firestore {
                         borderRadius: '10px',
                         padding: '10px 12px',
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
                         gap: '8px',
                         fontSize: '0.76rem',
-                        marginBottom: '10px'
+                        marginBottom: '10px',
+                        boxSizing: 'border-box'
                       }}>
-                        <div>
+                        <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontWeight: 700 }}>REFERENCIA</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
-                            <code style={{ fontWeight: 800, fontSize: '0.84rem', color: 'var(--text-main)' }}>{p.reference}</code>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px', minWidth: 0 }}>
+                            <code style={{ fontWeight: 800, fontSize: '0.84rem', color: 'var(--text-main)', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>{p.reference}</code>
                             <button
                               type="button"
                               onClick={() => { navigator.clipboard.writeText(p.reference); onNotify('Referencia copiada', 'info'); }}
-                              style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--text-muted)' }}
+                              style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--text-muted)', flexShrink: 0 }}
                               title="Copiar referencia"
                             >
                               <Copy size={12} />
@@ -2643,22 +2694,22 @@ service cloud.firestore {
                           </div>
                         </div>
 
-                        <div>
+                        <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontWeight: 700 }}>MONTO</div>
-                          <div style={{ fontWeight: 900, color: 'var(--c-primary)', fontSize: '0.88rem' }}>
+                          <div style={{ fontWeight: 900, color: 'var(--c-primary)', fontSize: '0.88rem', wordBreak: 'break-all' }}>
                             Bs. {parseFloat(p.amountVes || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
                           <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)' }}>(${p.amountUsd || 5} USD)</div>
                         </div>
 
-                        <div>
+                        <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontWeight: 700 }}>BANCO EMISOR</div>
                           <div style={{ fontWeight: 700, color: '#334155', wordBreak: 'break-word' }}>{p.bankOrigin || 'No especificado'}</div>
                         </div>
 
-                        <div>
+                        <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontWeight: 700 }}>TELÉFONO EMISOR</div>
-                          <div style={{ fontWeight: 700, color: '#0F172A', fontFamily: 'monospace' }}>{p.payerPhone || targetStore?.phone || 'No especificado'}</div>
+                          <div style={{ fontWeight: 700, color: '#0F172A', fontFamily: 'monospace', wordBreak: 'break-all' }}>{p.payerPhone || targetStore?.phone || 'No especificado'}</div>
                         </div>
 
                         <div style={{ gridColumn: '1 / -1', fontSize: '0.68rem', color: 'var(--text-dim)', borderTop: '1px dashed #EDE2D5', paddingTop: '4px' }}>
@@ -3715,6 +3766,14 @@ service cloud.firestore {
                               ) : sub.isPaidActive ? (
                                 <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#15803D', background: '#DCFCE7', padding: '3px 8px', borderRadius: '6px', border: '1px solid #BBF7D0' }} title={`Membresía pagada hasta el ${sub.paidUntil ? sub.paidUntil.toLocaleDateString('es-VE') : 'activo'}`}>
                                   ⭐ Pagada (hasta {sub.paidUntil ? sub.paidUntil.toLocaleDateString('es-VE') : 'activo'})
+                                </span>
+                              ) : st.pendingSubscriptionPayment ? (
+                                <span 
+                                  onClick={(e) => { e.stopPropagation(); setSubscriptionStore(st); }}
+                                  style={{ fontSize: '0.68rem', fontWeight: 800, color: '#B45309', background: '#FEF3C7', padding: '3px 8px', borderRadius: '6px', border: '1px solid #FCD34D', cursor: 'pointer' }} 
+                                  title="Pago de membresía reportado. Clic para revisar y aprobar"
+                                >
+                                  ⏳ Pago en Revisión
                                 </span>
                               ) : sub.isInTrial ? (
                                 <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#92400E', background: '#FEF3C7', padding: '3px 8px', borderRadius: '6px', border: '1px solid #FDE68A' }} title={`Período de prueba activo. Vence el ${sub.trialEndsAt ? sub.trialEndsAt.toLocaleDateString('es-VE') : 'N/A'}`}>
@@ -5697,12 +5756,12 @@ service cloud.firestore {
                     fontWeight: 800,
                     padding: '3px 8px',
                     borderRadius: '6px',
-                    background: (configForm.storeTrialMonths ?? 3) === 0 ? '#FEE2E2' : '#FEF3C7',
-                    color: (configForm.storeTrialMonths ?? 3) === 0 ? '#DC2626' : '#B45309'
+                    background: (configForm.storeTrialMonths ?? 0) === 0 ? '#FEE2E2' : '#FEF3C7',
+                    color: (configForm.storeTrialMonths ?? 0) === 0 ? '#DC2626' : '#B45309'
                   }}>
-                    {(configForm.storeTrialMonths ?? 3) === 0 
+                    {(configForm.storeTrialMonths ?? 0) === 0 
                       ? '🚫 Sin prueba (Pago Inmediato)' 
-                      : `🎁 ${configForm.storeTrialMonths ?? 3} mes(es) gratis`}
+                      : `🎁 ${configForm.storeTrialMonths ?? 0} mes(es) gratis`}
                   </span>
                 </label>
 
@@ -5714,7 +5773,7 @@ service cloud.firestore {
                     { label: '2 meses (60 días)', value: 2, desc: 'Promoción especial' },
                     { label: '3 meses (90 días)', value: 3, desc: 'Por defecto previo' }
                   ].map(opt => {
-                    const isSelected = (parseInt(configForm.storeTrialMonths ?? 3, 10)) === opt.value;
+                    const isSelected = (parseInt(configForm.storeTrialMonths ?? 0, 10)) === opt.value;
                     return (
                       <button
                         key={opt.value}
@@ -5754,7 +5813,7 @@ service cloud.firestore {
                     max="36"
                     step="1"
                     style={{ width: '80px', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontWeight: 800, textAlign: 'center' }}
-                    value={configForm.storeTrialMonths ?? 3}
+                    value={configForm.storeTrialMonths ?? 0}
                     onChange={(e) => setConfigForm(prev => ({ ...prev, storeTrialMonths: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
                   />
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>meses</span>
@@ -5766,17 +5825,17 @@ service cloud.firestore {
                   borderRadius: '8px',
                   fontSize: '0.74rem',
                   lineHeight: 1.4,
-                  background: (configForm.storeTrialMonths ?? 3) === 0 ? '#FEF2F2' : '#F0FDF4',
-                  color: (configForm.storeTrialMonths ?? 3) === 0 ? '#991B1B' : '#166534',
-                  border: `1px solid ${(configForm.storeTrialMonths ?? 3) === 0 ? '#FECACA' : '#BBF7D0'}`
+                  background: (configForm.storeTrialMonths ?? 0) === 0 ? '#FEF2F2' : '#F0FDF4',
+                  color: (configForm.storeTrialMonths ?? 0) === 0 ? '#991B1B' : '#166534',
+                  border: `1px solid ${(configForm.storeTrialMonths ?? 0) === 0 ? '#FECACA' : '#BBF7D0'}`
                 }}>
-                  {(configForm.storeTrialMonths ?? 3) === 0 ? (
+                  {(configForm.storeTrialMonths ?? 0) === 0 ? (
                     <>
                       <strong>⚠️ Modo Pago Inmediato Activado:</strong> Las tiendas que se registren a partir de ahora no tendrán período de prueba. Se bloquearán de inmediato en el panel POS solicitando el pago de la membresía básica para poder usar la plataforma.
                     </>
                   ) : (
                     <>
-                      <strong>💡 Período de Cortesía Activo:</strong> Toda nueva tienda registrada tendrá <strong>{configForm.storeTrialMonths ?? 3} mes(es)</strong> gratis para familiarizarse con el POS antes de tener que pagar su membresía.
+                      <strong>💡 Período de Cortesía Activo:</strong> Toda nueva tienda registrada tendrá <strong>{configForm.storeTrialMonths ?? 0} mes(es)</strong> gratis para familiarizarse con el POS antes de tener que pagar su membresía.
                     </>
                   )}
                 </div>

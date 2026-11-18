@@ -280,8 +280,8 @@ export default function LoginView({
       const maxNum = existingNumbers.length > 0 ? Math.max(...existingNumbers, 0) : 0;
       const newStoreId = `STR-${String(maxNum + 1).padStart(2, '0')}`;
       const now = new Date();
-      const trialMonths = config?.storeTrialMonths !== undefined ? parseInt(config.storeTrialMonths, 10) : 3;
-      const trialEnds = new Date(now.getTime() + (trialMonths * 30 * 24 * 60 * 60 * 1000));
+      const trialMonths = config?.storeTrialMonths !== undefined ? Math.max(0, parseInt(config.storeTrialMonths, 10) || 0) : 0;
+      const trialEnds = trialMonths > 0 ? new Date(now.getTime() + (trialMonths * 30 * 24 * 60 * 60 * 1000)) : now;
 
       const newStore = {
         id: newStoreId,
@@ -472,8 +472,8 @@ export default function LoginView({
     const maxNum = existingNumbers.length > 0 ? Math.max(...existingNumbers, 0) : 0;
     const newStoreId = `STR-${String(maxNum + 1).padStart(2, '0')}`;
     const now = new Date();
-    const trialMonths = config?.storeTrialMonths !== undefined ? parseInt(config.storeTrialMonths, 10) : 3;
-    const trialEnds = new Date(now.getTime() + (trialMonths * 30 * 24 * 60 * 60 * 1000));
+    const trialMonths = config?.storeTrialMonths !== undefined ? Math.max(0, parseInt(config.storeTrialMonths, 10) || 0) : 0;
+    const trialEnds = trialMonths > 0 ? new Date(now.getTime() + (trialMonths * 30 * 24 * 60 * 60 * 1000)) : now;
     const newStore = {
       id: newStoreId,
       firebaseUid: authRes.user?.uid || null,
