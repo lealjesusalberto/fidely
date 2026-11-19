@@ -356,6 +356,129 @@ export default function AdminPanelView({
   // Rewards catalog filtering
   const [rewardStoreFilter, setRewardStoreFilter] = useState('ALL');
 
+  // Push Notifications to Stores State
+  const [pushTargetScope, setPushTargetScope] = useState('ACTIVE_APP'); // 'ACTIVE_APP' | 'SPECIFIC' | 'ALL_STORES'
+  const [pushSelectedStoreId, setPushSelectedStoreId] = useState('');
+  const [pushTitle, setPushTitle] = useState('');
+  const [pushBody, setPushBody] = useState('');
+  const [isSendingPushToStores, setIsSendingPushToStores] = useState(false);
+  const [pushHistory, setPushHistory] = useState([]);
+
+  // Comercios que ya han accedido al panel POS por la app móvil o tienen token FCM
+  const storesWithMobileApp = useMemo(() => {
+    return (stores || []).filter(s => 
+      s.hasMobileApp === true ||
+      (s.fcmToken && String(s.fcmToken).trim().length > 10) ||
+      (Array.isArray(s.fcmTokens) && s.fcmTokens.length > 0)
+    );
+  }, [stores]);
+  const storesWithAppCount = storesWithMobileApp.length;
+
+  // Escuchar historial de push enviados
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'admin_push_history'), (snap) => {
+      const list = [];
+      snap.forEach(d => list.push({ ...d.data(), id: d.id }));
+      list.sort((a, b) => new Date(b.sentAt || 0) - new Date(a.sentAt || 0));
+      setPushHistory(list);
+    }, (err) => console.warn('Error loading push history:', err));
+    return () => unsub();
+  }, []);
+
+  const handleSendPushToStores = async (e) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (!pushTitle.trim()) {
+      onNotify('Por favor escribe un título para la notificación.', 'warning');
+      return;
+    }
+    if (!pushBody.trim()) {
+      onNotify('Por favor escribe el mensaje de la notificación.', 'warning');
+      return;
+    }
+
+    let targetStores = [];
+    if (pushTargetScope === 'SPECIFIC') {
+      const selected = stores.find(s => s.id === pushSelectedStoreId);
+      if (!selected) {
+        onNotify('Por favor selecciona un comercio destinatario.', 'warning');
+        return;
+      }
+      targetStores = [selected];
+    } else if (pushTargetScope === 'ACTIVE_APP') {
+      targetStores = storesWithMobileApp;
+      if (targetStores.length === 0) {
+        onNotify('No hay comercios con app móvil activa actualmente.', 'warning');
+        return;
+      }
+    } else {
+      targetStores = stores;
+    }
+
+    const tokens = [];
+    const userIds = [];
+    targetStores.forEach(s => {
+      if (s.fcmToken && typeof s.fcmToken === 'string' && s.fcmToken.trim().length > 10 && !tokens.includes(s.fcmToken)) {
+        tokens.push(s.fcmToken);
+      }
+      if (Array.isArray(s.fcmTokens)) {
+        s.fcmTokens.forEach(t => {
+          if (t && typeof t === 'string' && t.trim().length > 10 && !tokens.includes(t)) {
+            tokens.push(t);
+          }
+        });
+      }
+      const uid = s.id || s.firebaseUid || s.uid;
+      if (uid && !userIds.includes(uid)) userIds.push(uid);
+    });
+
+    setIsSendingPushToStores(true);
+    try {
+      const jobId = `JOB-STORE-${Date.now()}`;
+      
+      // 1. Encolar en Realtime Database para Cloud Function
+      await dbSet(dbRef(rtdb, `admin_notification_jobs/${jobId}`), {
+        title: pushTitle.trim(),
+        body: pushBody.trim(),
+        role: 'comercio',
+        userIds: userIds,
+        tokens: tokens,
+        targetStoreNames: targetStores.map(s => s.name),
+        data: {
+          type: 'fideli_pos_admin_alert',
+          source: 'fidelipro_admin',
+          timestamp: Date.now().toString(),
+          target: 'comercio_home'
+        },
+        status: 'pending',
+        createdAt: Date.now(),
+      });
+
+      // 2. Registrar en Firestore collection 'admin_push_history' para auditoría
+      const historyItem = {
+        id: jobId,
+        title: pushTitle.trim(),
+        body: pushBody.trim(),
+        scope: pushTargetScope,
+        targetStoresCount: targetStores.length,
+        targetStoreNames: targetStores.map(s => s.name).slice(0, 5),
+        tokensCount: tokens.length,
+        sentAt: new Date().toISOString(),
+        status: 'ENVIADO'
+      };
+      await setDoc(doc(db, 'admin_push_history', jobId), historyItem);
+
+      setPushHistory(prev => [historyItem, ...prev]);
+      setPushTitle('');
+      setPushBody('');
+      onNotify(`🚀 ¡Notificación push enviada a ${targetStores.length} comercio(s)!`, 'success');
+    } catch (err) {
+      console.error('Error enviando push:', err);
+      onNotify('Error al enviar notificación push: ' + (err.message || err), 'error');
+    } finally {
+      setIsSendingPushToStores(false);
+    }
+  };
+
   // Auto-sincronización permanente de fondo:
   // Reconcilia en tiempo real cualquier nuevo cliente o tienda registrada en la App Móvil Conecta2 o Google
   // hacia Cloud Firestore sin que el Administrador tenga que intervenir ni ejecutar comandos.
@@ -1880,6 +2003,24 @@ service cloud.firestore {
               <Settings size={16} color={activeTab === 'RULES' ? 'var(--c-accent)' : '#64748B'} />
               <span>Reglas</span>
             </div>
+          </button>
+
+          {/* 10. Push Comercios App POS */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('PUSH_STORES')}
+            className={`admin-sidebar-link ${activeTab === 'PUSH_STORES' ? 'active' : ''}`}
+            title="Enviar notificaciones push a los comercios con app móvil"
+          >
+            <div className="admin-sidebar-link-left">
+              <Smartphone size={16} color={activeTab === 'PUSH_STORES' ? 'var(--c-accent)' : '#64748B'} />
+              <span>Push Comercios</span>
+            </div>
+            {storesWithAppCount > 0 && (
+              <span className="admin-nav-badge" style={{ background: '#059669', color: '#FFFFFF' }}>
+                {storesWithAppCount}
+              </span>
+            )}
           </button>
         </nav>
       </aside>
@@ -3784,6 +3925,52 @@ service cloud.firestore {
                                   🔒 Pago Requerido ($5)
                                 </span>
                               )}
+
+                              {/* Indicador de App Móvil POS Activa */}
+                              {Boolean(st.hasMobileApp || st.fcmToken || (st.fcmTokens && st.fcmTokens.length > 0)) && (
+                                <span style={{
+                                  fontSize: '0.68rem',
+                                  fontWeight: 800,
+                                  color: '#065F46',
+                                  background: '#D1FAE5',
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #6EE7B7',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }} title="Este comercio ya inició sesión en la App Móvil y recibe notificaciones push">
+                                  <Smartphone size={11} color="#059669" />
+                                  <span>App POS Activa</span>
+                                </span>
+                              )}
+
+                              {/* Botón rápido Enviar Push */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveTab('PUSH_STORES');
+                                  setPushTargetScope('SPECIFIC');
+                                  setPushSelectedStoreId(st.id);
+                                }}
+                                className="btn"
+                                style={{
+                                  padding: '5px 10px',
+                                  fontSize: '0.72rem',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  fontWeight: 800,
+                                  background: (st.hasMobileApp || st.fcmToken) ? '#ECFDF5' : '#FAF8F5',
+                                  color: (st.hasMobileApp || st.fcmToken) ? '#065F46' : 'var(--text-main)',
+                                  border: (st.hasMobileApp || st.fcmToken) ? '1px solid #A7F3D0' : '1px solid var(--border-subtle)'
+                                }}
+                                title="Enviar notificación push inmediata a este comercio"
+                              >
+                                <Send size={11} color="var(--c-primary)" />
+                                <span>Push</span>
+                              </button>
 
                               {/* Botón rápido Editar */}
                               <button
@@ -6383,6 +6570,530 @@ service cloud.firestore {
                 Consola Cloud &gt; Reglas de Seguridad <ExternalLink size={13} />
               </a>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: NOTIFICACIONES PUSH A COMERCIOS (APP MÓVIL POS) */}
+      {activeTab === 'PUSH_STORES' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Header Panel */}
+          <div className="glass-panel" style={{ padding: 'clamp(14px, 3vw, 22px)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h2 style={{ fontSize: 'clamp(1.15rem, 4vw, 1.35rem)', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Smartphone size={22} color="var(--c-primary)" />
+                  <span>Notificaciones Push a Comercios (App Móvil POS)</span>
+                </h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '4px 0 0', lineHeight: 1.4 }}>
+                  Envía notificaciones push y alertas en tiempo real a los teléfonos y tablets de los comercios que ya acceden a su terminal POS por la aplicación móvil.
+                </p>
+              </div>
+
+              {storesWithAppCount > 0 && (
+                <div style={{
+                  background: '#ECFDF5',
+                  border: '1.5px solid #A7F3D0',
+                  padding: '8px 14px',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: '#065F46',
+                  fontSize: '0.80rem',
+                  fontWeight: 800
+                }}>
+                  <Smartphone size={16} color="#059669" />
+                  <span>{storesWithAppCount} comercio(s) con App Móvil activa</span>
+                </div>
+              )}
+            </div>
+
+            {/* KPIs Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '12px',
+              marginTop: '18px'
+            }}>
+              <div className="card-kpi" style={{ borderLeft: '4px solid var(--c-primary)' }}>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>
+                  Total Comercios
+                </div>
+                <div style={{ fontSize: '1.55rem', fontWeight: 900, color: 'var(--text-main)', marginTop: '4px' }}>
+                  {stores.length}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  Registrados en Firestore
+                </div>
+              </div>
+
+              <div className="card-kpi" style={{ borderLeft: '4px solid #10B981' }}>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>
+                  Con App Móvil Activa
+                </div>
+                <div style={{ fontSize: '1.55rem', fontWeight: 900, color: '#047857', marginTop: '4px' }}>
+                  {storesWithAppCount}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#065F46', marginTop: '2px', fontWeight: 700 }}>
+                  🟢 Con terminal POS instalada
+                </div>
+              </div>
+
+              <div className="card-kpi" style={{ borderLeft: '4px solid #3B82F6' }}>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>
+                  Destinatarios Listos
+                </div>
+                <div style={{ fontSize: '1.55rem', fontWeight: 900, color: '#1D4ED8', marginTop: '4px' }}>
+                  {pushTargetScope === 'SPECIFIC'
+                    ? (pushSelectedStoreId ? 1 : 0)
+                    : (pushTargetScope === 'ACTIVE_APP' ? storesWithAppCount : stores.length)}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  {pushTargetScope === 'SPECIFIC' ? 'Comercio seleccionado' : 'Comercios alcanzados'}
+                </div>
+              </div>
+
+              <div className="card-kpi" style={{ borderLeft: '4px solid #F59E0B' }}>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>
+                  Historial de Envíos
+                </div>
+                <div style={{ fontSize: '1.55rem', fontWeight: 900, color: '#B45309', marginTop: '4px' }}>
+                  {pushHistory.length}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  Campañas / avisos enviados
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Formulario de Redacción & Previsualización */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '18px'
+          }}>
+            {/* Columna Izquierda: Redacción */}
+            <div className="glass-panel" style={{ padding: '20px' }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Send size={18} color="var(--c-primary)" />
+                <span>Redactar Notificación Push</span>
+              </h3>
+
+              <form onSubmit={handleSendPushToStores} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Selector de Destinatarios */}
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.80rem', fontWeight: 800, marginBottom: '6px' }}>
+                    Destinatarios de la Notificación:
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: pushTargetScope === 'ACTIVE_APP' ? '2px solid var(--c-primary)' : '1px solid #E2E8F0',
+                      background: pushTargetScope === 'ACTIVE_APP' ? 'rgba(156, 56, 42, 0.05)' : '#FFFFFF',
+                      cursor: 'pointer',
+                      fontSize: '0.82rem',
+                      fontWeight: 700
+                    }}>
+                      <input
+                        type="radio"
+                        name="pushScope"
+                        value="ACTIVE_APP"
+                        checked={pushTargetScope === 'ACTIVE_APP'}
+                        onChange={() => setPushTargetScope('ACTIVE_APP')}
+                        style={{ accentColor: 'var(--c-primary)' }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div>🟢 Solo Comercios con App Móvil activa ({storesWithAppCount})</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                          Llega directamente a los teléfonos con el POS abierto o instalado
+                        </div>
+                      </div>
+                    </label>
+
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: pushTargetScope === 'SPECIFIC' ? '2px solid var(--c-primary)' : '1px solid #E2E8F0',
+                      background: pushTargetScope === 'SPECIFIC' ? 'rgba(156, 56, 42, 0.05)' : '#FFFFFF',
+                      cursor: 'pointer',
+                      fontSize: '0.82rem',
+                      fontWeight: 700
+                    }}>
+                      <input
+                        type="radio"
+                        name="pushScope"
+                        value="SPECIFIC"
+                        checked={pushTargetScope === 'SPECIFIC'}
+                        onChange={() => setPushTargetScope('SPECIFIC')}
+                        style={{ accentColor: 'var(--c-primary)' }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div>🎯 Enviar a un comercio específico</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                          Selecciona la tienda aliada individual a la que deseas alertar
+                        </div>
+                      </div>
+                    </label>
+
+                    {pushTargetScope === 'SPECIFIC' && (
+                      <div style={{ marginLeft: '26px' }}>
+                        <select
+                          className="form-input"
+                          value={pushSelectedStoreId}
+                          onChange={(e) => setPushSelectedStoreId(e.target.value)}
+                          style={{ fontSize: '0.82rem', fontWeight: 700, padding: '8px 12px' }}
+                          required
+                        >
+                          <option value="">-- Selecciona un comercio --</option>
+                          {stores.map(st => {
+                            const hasApp = Boolean(st.hasMobileApp || st.fcmToken || (st.fcmTokens && st.fcmTokens.length > 0));
+                            return (
+                              <option key={st.id} value={st.id}>
+                                {hasApp ? '🟢 [App Activa] ' : '⚪ '} {st.name} ({st.category || 'Comercio'})
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    )}
+
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: pushTargetScope === 'ALL_STORES' ? '2px solid var(--c-primary)' : '1px solid #E2E8F0',
+                      background: pushTargetScope === 'ALL_STORES' ? 'rgba(156, 56, 42, 0.05)' : '#FFFFFF',
+                      cursor: 'pointer',
+                      fontSize: '0.82rem',
+                      fontWeight: 700
+                    }}>
+                      <input
+                        type="radio"
+                        name="pushScope"
+                        value="ALL_STORES"
+                        checked={pushTargetScope === 'ALL_STORES'}
+                        onChange={() => setPushTargetScope('ALL_STORES')}
+                        style={{ accentColor: 'var(--c-primary)' }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div>📢 Todos los comercios ({stores.length})</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                          Envía broadcast a toda la red de comercios aliados
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Plantillas Rápidas */}
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800, marginBottom: '6px' }}>
+                    Plantillas de Mensaje Rápido (Haz clic para usar):
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPushTitle('🔔 ¡Revisa tus solicitudes pendientes en el POS!');
+                        setPushBody('Tienes clientes esperando la acreditación de sellos o canjes de recompensas en tu terminal.');
+                      }}
+                      className="btn"
+                      style={{ fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', background: '#FEF3C7', border: '1px solid #FCD34D', color: '#92400E', borderRadius: '8px' }}
+                    >
+                      🔔 Solicitudes Pendientes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPushTitle('⭐ Actualización de Fidely POS disponible');
+                        setPushBody('Abre tu app para disfrutar de mayor velocidad al escanear sellos y gestionar canjes en mostrador.');
+                      }}
+                      className="btn"
+                      style={{ fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', background: '#DBEAFE', border: '1px solid #BFDBFE', color: '#1E40AF', borderRadius: '8px' }}
+                    >
+                      ⭐ Nueva Actualización
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPushTitle('🎉 ¡Gran jornada de clientes fidelizados!');
+                        setPushBody('Tus clientes están sumando sellos en tu local. Recuerda mantener visible el cartel QR de tu tienda en caja.');
+                      }}
+                      className="btn"
+                      style={{ fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', background: '#DCFCE7', border: '1px solid #BBF7D0', color: '#166534', borderRadius: '8px' }}
+                    >
+                      🎉 Recordatorio de Cartel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPushTitle('⚠️ Aviso de soporte y mantenimiento');
+                        setPushBody('Estaremos realizando mejoras de plataforma. Tu terminal POS continuará operando normalmente.');
+                      }}
+                      className="btn"
+                      style={{ fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', background: '#F1F5F9', border: '1px solid #CBD5E1', color: '#334155', borderRadius: '8px' }}
+                    >
+                      ⚠️ Aviso de Soporte
+                    </button>
+                  </div>
+                </div>
+
+                {/* Campos de Título y Cuerpo */}
+                <div className="form-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <label className="form-label" style={{ fontSize: '0.80rem', fontWeight: 700 }}>
+                      Título de la Notificación *
+                    </label>
+                    <span style={{ fontSize: '0.70rem', color: 'var(--text-dim)' }}>
+                      {pushTitle.length}/60 caracteres
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    maxLength={60}
+                    required
+                    value={pushTitle}
+                    onChange={(e) => setPushTitle(e.target.value)}
+                    className="form-input"
+                    placeholder="Ej. ¡Tienes nuevas solicitudes de sellos en caja!"
+                    style={{ fontSize: '0.84rem', fontWeight: 700 }}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <label className="form-label" style={{ fontSize: '0.80rem', fontWeight: 700 }}>
+                      Mensaje / Cuerpo de la Notificación *
+                    </label>
+                    <span style={{ fontSize: '0.70rem', color: 'var(--text-dim)' }}>
+                      {pushBody.length}/200 caracteres
+                    </span>
+                  </div>
+                  <textarea
+                    maxLength={200}
+                    rows={3}
+                    required
+                    value={pushBody}
+                    onChange={(e) => setPushBody(e.target.value)}
+                    className="form-input"
+                    placeholder="Ej. Ingresa a la pestaña Solicitudes en tu app para aprobar los sellos de tus clientes..."
+                    style={{ fontSize: '0.82rem', resize: 'vertical' }}
+                  />
+                </div>
+
+                {/* Botón de Envío */}
+                <button
+                  type="submit"
+                  disabled={isSendingPushToStores || !pushTitle.trim() || !pushBody.trim()}
+                  className="btn btn-primary"
+                  style={{
+                    padding: '12px 20px',
+                    fontSize: '0.88rem',
+                    fontWeight: 800,
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    background: 'linear-gradient(135deg, var(--c-primary) 0%, #7E2A1F 100%)',
+                    boxShadow: '0 4px 14px rgba(156, 56, 42, 0.3)',
+                    cursor: (isSendingPushToStores || !pushTitle.trim() || !pushBody.trim()) ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  <Send size={16} />
+                  <span>{isSendingPushToStores ? 'Disparando Push vía FCM...' : '🚀 Enviar Notificación Push Ahora'}</span>
+                </button>
+              </form>
+            </div>
+
+            {/* Columna Derecha: Vista Previa en Móvil */}
+            <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Smartphone size={18} color="var(--c-primary)" />
+                <span>Simulador de Notificación en Teléfono</span>
+              </h3>
+
+              <div style={{
+                background: '#0F172A',
+                borderRadius: '24px',
+                padding: '24px 18px',
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5)',
+                border: '3px solid #334155'
+              }}>
+                {/* Mockup de Teléfono - Notificación Popup */}
+                <div style={{
+                  background: '#FFFFFF',
+                  borderRadius: '16px',
+                  padding: '14px 16px',
+                  width: '100%',
+                  maxWidth: '340px',
+                  boxShadow: '0 10px 25px -5px rgba(0,0,0,0.4)',
+                  border: '1px solid #E2E8F0'
+                }}>
+                  {/* Notification Top bar */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '5px',
+                        background: 'var(--c-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#FFFFFF',
+                        fontSize: '10px',
+                        fontWeight: 900
+                      }}>
+                        F
+                      </div>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#334155' }}>
+                        FIDELY POS
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>
+                      ahora
+                    </span>
+                  </div>
+
+                  {/* Notification Title */}
+                  <div style={{
+                    fontSize: '0.86rem',
+                    fontWeight: 800,
+                    color: '#0F172A',
+                    marginBottom: '4px',
+                    wordBreak: 'break-word'
+                  }}>
+                    {pushTitle.trim() || 'Título de la Notificación'}
+                  </div>
+
+                  {/* Notification Body */}
+                  <div style={{
+                    fontSize: '0.78rem',
+                    color: '#475569',
+                    lineHeight: '1.35',
+                    wordBreak: 'break-word'
+                  }}>
+                    {pushBody.trim() || 'Aquí se mostrará el mensaje que redactes. Al comercio le llegará con alerta sonora y vibración al teléfono.'}
+                  </div>
+
+                  {/* Notification Footer action */}
+                  <div style={{
+                    marginTop: '10px',
+                    paddingTop: '8px',
+                    borderTop: '1px solid #F1F5F9',
+                    fontSize: '0.70rem',
+                    fontWeight: 700,
+                    color: 'var(--c-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <span>👉 Toca para abrir terminal POS</span>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '16px', fontSize: '0.72rem', color: '#94A3B8', textAlign: 'center' }}>
+                  El comercio recibe esta alerta nativa en su barra de estado de Android o iOS.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Historial de Envíos */}
+          <div className="glass-panel" style={{ padding: '20px' }}>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock size={18} color="var(--c-primary)" />
+              <span>Historial de Notificaciones Push a Comercios ({pushHistory.length})</span>
+            </h3>
+
+            {pushHistory.length === 0 ? (
+              <div style={{
+                padding: '24px',
+                textAlign: 'center',
+                color: 'var(--text-muted)',
+                background: '#FAF8F5',
+                borderRadius: '12px',
+                border: '1px dashed var(--border-subtle)',
+                fontSize: '0.84rem'
+              }}>
+                Aún no se han enviado notificaciones push a comercios desde esta consola.
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="admin-table" style={{ width: '100%', fontSize: '0.80rem' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: '10px 12px' }}>Fecha & Hora</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px' }}>Título</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px' }}>Mensaje</th>
+                      <th style={{ textAlign: 'center', padding: '10px 12px' }}>Alcance</th>
+                      <th style={{ textAlign: 'center', padding: '10px 12px' }}>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pushHistory.map(item => (
+                      <tr key={item.id}>
+                        <td style={{ padding: '10px 12px', whiteSpace: 'nowrap', fontWeight: 600, color: 'var(--text-muted)' }}>
+                          {item.sentAt ? new Date(item.sentAt).toLocaleString('es-VE') : 'Reciente'}
+                        </td>
+                        <td style={{ padding: '10px 12px', fontWeight: 800, color: 'var(--text-main)' }}>
+                          {item.title}
+                        </td>
+                        <td style={{ padding: '10px 12px', color: 'var(--text-muted)', maxWidth: '280px' }}>
+                          {item.body}
+                        </td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                          <span style={{
+                            background: '#EFF6FF',
+                            border: '1px solid #BFDBFE',
+                            color: '#1E40AF',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                            fontSize: '0.72rem'
+                          }}>
+                            {item.targetStoresCount || item.tokensCount || 1} comercio(s)
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                          <span style={{
+                            background: '#DCFCE7',
+                            color: '#15803D',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontWeight: 800,
+                            fontSize: '0.72rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            <CheckCircle2 size={12} />
+                            <span>{item.status || 'ENVIADO'}</span>
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}

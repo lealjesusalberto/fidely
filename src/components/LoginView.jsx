@@ -42,6 +42,7 @@ import {
   provisionComercioInRealtimeDb,
   loginWithGoogle,
   checkGoogleRedirectResult,
+  subscribeAuthState,
   logoutFromFirebase
 } from '../firebase/authService';
 import {
@@ -634,17 +635,58 @@ export default function LoginView({
         } catch (e) { }
       }
 
-      // 4. ¿Es Cliente con rol ya definido y confirmado permanentemente?
-      const isConfirmedClient = matchedClient && (
-        matchedClient.roleConfirmed === true ||
-        matchedClient.registrationSource === 'FORM' ||
-        Boolean(matchedClient.pin)
-      );
+      // 4. APROVISIONAMIENTO DIRECTO COMO SOCIO / CLIENTE:
+      // Se garantiza que NINGÚN usuario quede como cuenta huérfana en Firebase Auth sin registro en Firestore ni Realtime DB.
+      const rawCedula = authUser.uid.substring(0, 8).toUpperCase();
+      const todayDate = new Date().toISOString().split('T')[0];
 
-      if (isConfirmedClient) {
-        // El usuario ya confirmó previamente que es Cliente: entrar directo
+      let clientToSave = matchedClient;
+      if (!clientToSave) {
+        const initialCards = [];
         if (storeToLink) {
-          const existingCards = Array.isArray(matchedClient.loyaltyCards) ? [...matchedClient.loyaltyCards] : [];
+          initialCards.push({
+            storeId: storeToLink.id,
+            storeName: storeToLink.name,
+            logo: storeToLink.logo || '',
+            cardColor: storeToLink.cardColor || '#70092B',
+            cardGradient: storeToLink.cardGradient || '',
+            currentStamps: 0,
+            stampsTarget: Number(storeToLink.stampsTarget || 6),
+            rewardTitle: storeToLink.rewardTitle || 'Premio de Fidelidad',
+            stampRewards: storeToLink.stampRewards || [],
+            stampsHistory: []
+          });
+        }
+
+        clientToSave = {
+          id: authUser.uid,
+          firebaseUid: authUser.uid,
+          docId: rawCedula,
+          qrCode: `FIDELY-${rawCedula}`,
+          name: authUser.displayName || cleanEmail.split('@')[0],
+          initials: (authUser.displayName || cleanEmail.split('@')[0]).split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'FC',
+          email: cleanEmail,
+          phone: authUser.phoneNumber || '',
+          birthDate: '',
+          photoURL: authUser.photoURL || '',
+          pointsBalance: 0,
+          storeBalances: { ALL: 0 },
+          tier: 'Cliente',
+          hasSelectedWelcomeStore: Boolean(storeToLink),
+          favoriteStoreId: storeToLink?.id || joinStoreId || 'ALL',
+          joinDate: todayDate,
+          memberSince: todayDate,
+          status: 'ACTIVO',
+          roleConfirmed: true,
+          accountType: 'CLIENT',
+          createdAt: new Date().toISOString(),
+          registeredViaStoreId: storeToLink?.id || joinStoreId || 'GOOGLE_SIGN_IN',
+          registrationSource: 'GOOGLE_SIGN_IN',
+          loyaltyCards: initialCards
+        };
+      } else {
+        const existingCards = Array.isArray(clientToSave.loyaltyCards) ? [...clientToSave.loyaltyCards] : [];
+        if (storeToLink) {
           const hasCard = existingCards.some(c => String(c.storeId || c.id).toLowerCase() === storeToLink.id.toLowerCase());
           if (!hasCard) {
             existingCards.push({
@@ -659,55 +701,51 @@ export default function LoginView({
               stampRewards: storeToLink.stampRewards || [],
               stampsHistory: []
             });
-            const updatedClient = { ...matchedClient, loyaltyCards: existingCards };
-            try {
-              await saveClient(updatedClient);
-            } catch (e) { }
-            matchedClient = updatedClient;
           }
         }
-
-        // Garantizar perfil en Realtime Database
-        provisionUserInRealtimeDb({
-          uid: authUser.uid,
-          email: cleanEmail,
-          name: matchedClient.name,
-          phone: matchedClient.phone,
-          docId: matchedClient.docId,
-          photoURL: matchedClient.photoURL || authUser.photoURL || '',
-          registeredViaStoreId: matchedClient.registeredViaStoreId || null
-        });
-
-        if (onClearJoinStore) onClearJoinStore();
-        setIsAuthLoading(false);
-        onLogin({
-          role: 'CLIENT',
-          client: matchedClient,
-          name: matchedClient.name,
-          email: cleanEmail,
-          id: matchedClient.id,
-          phone: matchedClient.phone,
-          docId: matchedClient.docId
-        });
-        return;
+        clientToSave = {
+          ...clientToSave,
+          firebaseUid: authUser.uid,
+          roleConfirmed: true,
+          accountType: 'CLIENT',
+          loyaltyCards: existingCards
+        };
       }
 
-      // 5. NUEVO USUARIO DE GOOGLE O USUARIO SIN ROL CONFIRMADO:
-      // Se detiene el inicio automático y se presenta el modal obligatorio para definir rol: Cliente o Comercio
-      setPendingGoogleAuth({
-        authUser,
-        cleanEmail,
-        specificStore: storeToLink,
-        matchedClient
-      });
-      setGoogleStoreName(authUser.displayName || '');
-      setGoogleStoreCategory('Barbería / Peluquería');
-      setGoogleStoreCity('Caracas');
-      setGoogleStorePhone(authUser.phoneNumber || '');
-      setGoogleRoleStep('CHOOSE');
-      setGoogleRoleError('');
+      // 1. Guardar INMEDIATAMENTE en Cloud Firestore (para que figure en el Admin Panel de fidely)
+      try {
+        await saveClient(clientToSave);
+      } catch (eSave) {
+        console.warn('[Google Auth] Error guardando cliente en Firestore:', eSave);
+      }
+
+      // 2. Aprovisionar INMEDIATAMENTE en Firebase Realtime Database (users/{uid} para Conecta2 y apps móviles)
+      try {
+        await provisionUserInRealtimeDb({
+          uid: authUser.uid,
+          email: cleanEmail,
+          name: clientToSave.name,
+          phone: clientToSave.phone,
+          docId: clientToSave.docId,
+          photoURL: clientToSave.photoURL || authUser.photoURL || '',
+          registeredViaStoreId: clientToSave.registeredViaStoreId || null
+        });
+      } catch (eRtdb) {
+        console.warn('[Google Auth] Error aprovisionando en Realtime Database:', eRtdb);
+      }
+
+      if (onClearJoinStore) onClearJoinStore();
       setIsAuthLoading(false);
-      setShowGoogleRoleModal(true);
+      onLogin({
+        role: 'CLIENT',
+        client: clientToSave,
+        name: clientToSave.name,
+        email: cleanEmail,
+        id: clientToSave.id,
+        phone: clientToSave.phone,
+        docId: clientToSave.docId
+      });
+      return;
     } catch (err) {
       console.error('Error procesando usuario de Google:', err);
       setIsAuthLoading(false);
@@ -715,9 +753,11 @@ export default function LoginView({
     }
   };
 
-  // Escuchar automáticamente si venimos de un redirect de Google
+  // Escuchar automáticamente si venimos de un redirect o si ya hay sesión activa en Firebase Auth
   useEffect(() => {
     let active = true;
+
+    // 1. Comprobar resultado de redirect si el navegador cerró o cambió de pestaña
     checkGoogleRedirectResult().then(async (res) => {
       if (!active || !res || !res.success || !res.user) return;
       console.log('🔄 [Google Redirect Auth] Usuario detectado al volver de Google:', res.user.email);
@@ -725,7 +765,18 @@ export default function LoginView({
     }).catch(err => {
       console.warn('[Google Redirect Auth] Error comprobando redirect:', err);
     });
-    return () => { active = false; };
+
+    // 2. Escuchar sesión activa de Firebase Auth para auto-vincular usuarios que ya autorizaron
+    const unsubscribe = subscribeAuthState(async (authUser) => {
+      if (!active || !authUser) return;
+      console.log('🔄 [Auth State] Sesión activa de Firebase Auth detectada:', authUser.email);
+      await processGoogleUser(authUser);
+    });
+
+    return () => {
+      active = false;
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   // Autenticación rápida con Google (y auto-vinculación de tarjeta si viene por QR)
@@ -1228,6 +1279,59 @@ export default function LoginView({
         </div>
       )}
 
+      {/* OVERLAY BLOQUEANTE DE CARGA / REDIRECCIÓN (Conexión Segura con Google) */}
+      {isAuthLoading && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.72)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          zIndex: 999999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '24px',
+            padding: '36px 28px',
+            maxWidth: '400px',
+            width: '100%',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.35)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #70092B 0%, #B85D43 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#FFFFFF',
+              boxShadow: '0 8px 24px rgba(112, 9, 43, 0.28)'
+            }}>
+              <Loader2 size={30} className="animate-spin" />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.20rem', fontWeight: 850, margin: '0 0 6px 0', color: '#1C1917', letterSpacing: '-0.02em' }}>
+                Conectando con Google...
+              </h3>
+              <p style={{ fontSize: '0.84rem', color: '#64748B', margin: 0, lineHeight: 1.5 }}>
+                Estamos verificando tu cuenta y preparando tu acceso seguro a <strong>fidely CLUB</strong>. Por favor espera un momento sin cerrar esta ventana.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 3D Floating Ambient Spheres (Brackto Reference Aesthetic) */}
       <div className="fidely-floating-sphere sphere-1" />
       <div className="fidely-floating-sphere sphere-2" />
@@ -1648,13 +1752,22 @@ export default function LoginView({
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                    </svg>
-                    <span>Continuar con Google</span>
+                    {isAuthLoading ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        <span>Conectando con Google...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg width="18" height="18" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                        </svg>
+                        <span>Continuar con Google</span>
+                      </>
+                    )}
                   </button>
                 </form>
 
@@ -1755,13 +1868,22 @@ export default function LoginView({
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                    </svg>
-                    <span>Registrarme con Google en 1 Clic</span>
+                    {isAuthLoading ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        <span>Conectando con Google...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg width="18" height="18" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                        </svg>
+                        <span>Registrarme con Google en 1 Clic</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
