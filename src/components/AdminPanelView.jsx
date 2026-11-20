@@ -435,8 +435,8 @@ export default function AdminPanelView({
     try {
       const jobId = `JOB-STORE-${Date.now()}`;
       
-      // 1. Encolar en Realtime Database para Cloud Function
-      await dbSet(dbRef(rtdb, `admin_notification_jobs/${jobId}`), {
+      const notificationPayload = {
+        id: jobId,
         title: pushTitle.trim(),
         body: pushBody.trim(),
         role: 'comercio',
@@ -451,9 +451,37 @@ export default function AdminPanelView({
         },
         status: 'pending',
         createdAt: Date.now(),
-      });
+        timestamp: Date.now()
+      };
 
-      // 2. Registrar en Firestore collection 'admin_push_history' para auditoría
+      // 1. Encolar en Realtime Database en 'notificaciones' (nodo habilitado en reglas)
+      if (rtdb) {
+        try {
+          await dbSet(dbRef(rtdb, `notificaciones/${jobId}`), notificationPayload);
+        } catch (rtdbErr) {
+          console.warn('[Push] Advertencia encolando en RTDB notificaciones:', rtdbErr);
+        }
+
+        // 2. Alertar directamente en el nodo de cada comercio (user_comercio)
+        const updateComercioPromises = targetStores.map(async (st) => {
+          const storeUid = st.firebaseUid || st.id;
+          if (storeUid) {
+            try {
+              await dbSet(dbRef(rtdb, `user_comercio/${storeUid}/notificacion_admin`), {
+                id: jobId,
+                title: pushTitle.trim(),
+                body: pushBody.trim(),
+                sentAt: new Date().toISOString(),
+                timestamp: Date.now(),
+                read: false
+              });
+            } catch (_) {}
+          }
+        });
+        await Promise.allSettled(updateComercioPromises);
+      }
+
+      // 3. Registrar en Firestore collection 'admin_push_history' para auditoría
       const historyItem = {
         id: jobId,
         title: pushTitle.trim(),
@@ -465,12 +493,18 @@ export default function AdminPanelView({
         sentAt: new Date().toISOString(),
         status: 'ENVIADO'
       };
-      await setDoc(doc(db, 'admin_push_history', jobId), historyItem);
+      if (db) {
+        try {
+          await setDoc(doc(db, 'admin_push_history', jobId), historyItem);
+        } catch (firestoreErr) {
+          console.warn('[Push] Advertencia guardando auditoría en Firestore:', firestoreErr);
+        }
+      }
 
       setPushHistory(prev => [historyItem, ...prev]);
       setPushTitle('');
       setPushBody('');
-      onNotify(`🚀 ¡Notificación push enviada a ${targetStores.length} comercio(s)!`, 'success');
+      onNotify(`🚀 ¡Notificación push enviada con éxito a ${targetStores.length} comercio(s)!`, 'success');
     } catch (err) {
       console.error('Error enviando push:', err);
       onNotify('Error al enviar notificación push: ' + (err.message || err), 'error');

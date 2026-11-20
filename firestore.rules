@@ -89,5 +89,10 @@ service cloud.firestore {
       allow read, create, update: if true;
       allow delete: if isAuthenticated();
     }
+
+    // 13. Historial de Notificaciones Push y Alertas a Comercios
+    match /admin_push_history/{historyId} {
+      allow read, write: if true;
+    }
   }
 }
