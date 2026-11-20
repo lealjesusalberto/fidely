@@ -357,22 +357,12 @@ export default function AdminPanelView({
   const [rewardStoreFilter, setRewardStoreFilter] = useState('ALL');
 
   // Push Notifications to Stores State
-  const [pushTargetScope, setPushTargetScope] = useState('ACTIVE_APP'); // 'ACTIVE_APP' | 'SPECIFIC' | 'ALL_STORES'
+  const [pushTargetScope, setPushTargetScope] = useState('ALL_STORES'); // 'ALL_STORES' | 'SPECIFIC'
   const [pushSelectedStoreId, setPushSelectedStoreId] = useState('');
   const [pushTitle, setPushTitle] = useState('');
   const [pushBody, setPushBody] = useState('');
   const [isSendingPushToStores, setIsSendingPushToStores] = useState(false);
   const [pushHistory, setPushHistory] = useState([]);
-
-  // Comercios que ya han accedido al panel POS por la app móvil o tienen token FCM
-  const storesWithMobileApp = useMemo(() => {
-    return (stores || []).filter(s => 
-      s.hasMobileApp === true ||
-      (s.fcmToken && String(s.fcmToken).trim().length > 10) ||
-      (Array.isArray(s.fcmTokens) && s.fcmTokens.length > 0)
-    );
-  }, [stores]);
-  const storesWithAppCount = storesWithMobileApp.length;
 
   // Escuchar historial de push enviados
   useEffect(() => {
@@ -404,14 +394,12 @@ export default function AdminPanelView({
         return;
       }
       targetStores = [selected];
-    } else if (pushTargetScope === 'ACTIVE_APP') {
-      targetStores = storesWithMobileApp;
-      if (targetStores.length === 0) {
-        onNotify('No hay comercios con app móvil activa actualmente.', 'warning');
-        return;
-      }
     } else {
       targetStores = stores;
+      if (targetStores.length === 0) {
+        onNotify('No hay comercios registrados actualmente en el sistema.', 'warning');
+        return;
+      }
     }
 
     const tokens = [];
@@ -462,7 +450,7 @@ export default function AdminPanelView({
           console.warn('[Push] Advertencia encolando en RTDB notificaciones:', rtdbErr);
         }
 
-        // 2. Alertar directamente en el nodo de cada comercio (user_comercio)
+        // 2. Alertar directamente en el nodo de cada comercio (user_comercio) para App Móvil
         const updateComercioPromises = targetStores.map(async (st) => {
           const storeUid = st.firebaseUid || st.id;
           if (storeUid) {
@@ -474,6 +462,21 @@ export default function AdminPanelView({
                 sentAt: new Date().toISOString(),
                 timestamp: Date.now(),
                 read: false
+              });
+            } catch (_) {}
+          }
+          // Y actualizar en Firestore stores/{id} para que la Web POS lo reciba instantáneamente
+          if (db && st.id) {
+            try {
+              await updateDoc(doc(db, 'stores', st.id), {
+                lastAdminAlert: {
+                  id: jobId,
+                  title: pushTitle.trim(),
+                  body: pushBody.trim(),
+                  sentAt: new Date().toISOString(),
+                  timestamp: Date.now(),
+                  read: false
+                }
               });
             } catch (_) {}
           }
@@ -504,7 +507,7 @@ export default function AdminPanelView({
       setPushHistory(prev => [historyItem, ...prev]);
       setPushTitle('');
       setPushBody('');
-      onNotify(`🚀 ¡Notificación push enviada con éxito a ${targetStores.length} comercio(s)!`, 'success');
+      onNotify(`🚀 ¡Notificación enviada con éxito a ${targetStores.length} comercio(s) (Web y App Móvil)!`, 'success');
     } catch (err) {
       console.error('Error enviando push:', err);
       onNotify('Error al enviar notificación push: ' + (err.message || err), 'error');
@@ -6726,10 +6729,10 @@ service cloud.firestore {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '10px',
-                      padding: '10px 14px',
+                      padding: '12px 14px',
                       borderRadius: '10px',
-                      border: pushTargetScope === 'ACTIVE_APP' ? '2px solid var(--c-primary)' : '1px solid #E2E8F0',
-                      background: pushTargetScope === 'ACTIVE_APP' ? 'rgba(156, 56, 42, 0.05)' : '#FFFFFF',
+                      border: pushTargetScope === 'ALL_STORES' ? '2px solid var(--c-primary)' : '1px solid #E2E8F0',
+                      background: pushTargetScope === 'ALL_STORES' ? 'rgba(156, 56, 42, 0.05)' : '#FFFFFF',
                       cursor: 'pointer',
                       fontSize: '0.82rem',
                       fontWeight: 700
@@ -6737,15 +6740,20 @@ service cloud.firestore {
                       <input
                         type="radio"
                         name="pushScope"
-                        value="ACTIVE_APP"
-                        checked={pushTargetScope === 'ACTIVE_APP'}
-                        onChange={() => setPushTargetScope('ACTIVE_APP')}
+                        value="ALL_STORES"
+                        checked={pushTargetScope === 'ALL_STORES'}
+                        onChange={() => setPushTargetScope('ALL_STORES')}
                         style={{ accentColor: 'var(--c-primary)' }}
                       />
                       <div style={{ flex: 1 }}>
-                        <div>🟢 Solo Comercios con App Móvil activa ({storesWithAppCount})</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                          Llega directamente a los teléfonos con el POS abierto o instalado
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>🏢 Todos los Comercios Aliados ({stores.length})</span>
+                          <span style={{ fontSize: '0.68rem', fontWeight: 800, background: '#DCFCE7', color: '#166534', padding: '1px 6px', borderRadius: '4px' }}>
+                            Web & App Móvil
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500, marginTop: '2px' }}>
+                          Llega a toda la red de comercios (se muestra en sus terminales web POS y en la app Conecta2)
                         </div>
                       </div>
                     </label>
@@ -6754,7 +6762,7 @@ service cloud.firestore {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '10px',
-                      padding: '10px 14px',
+                      padding: '12px 14px',
                       borderRadius: '10px',
                       border: pushTargetScope === 'SPECIFIC' ? '2px solid var(--c-primary)' : '1px solid #E2E8F0',
                       background: pushTargetScope === 'SPECIFIC' ? 'rgba(156, 56, 42, 0.05)' : '#FFFFFF',
@@ -6772,8 +6780,8 @@ service cloud.firestore {
                       />
                       <div style={{ flex: 1 }}>
                         <div>🎯 Enviar a un comercio específico</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                          Selecciona la tienda aliada individual a la que deseas alertar
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500, marginTop: '2px' }}>
+                          Selecciona una tienda aliada individual para enviarle un comunicado directo
                         </div>
                       </div>
                     </label>
@@ -6788,45 +6796,14 @@ service cloud.firestore {
                           required
                         >
                           <option value="">-- Selecciona un comercio --</option>
-                          {stores.map(st => {
-                            const hasApp = Boolean(st.hasMobileApp || st.fcmToken || (st.fcmTokens && st.fcmTokens.length > 0));
-                            return (
-                              <option key={st.id} value={st.id}>
-                                {hasApp ? '🟢 [App Activa] ' : '⚪ '} {st.name} ({st.category || 'Comercio'})
-                              </option>
-                            );
-                          })}
+                          {stores.map(st => (
+                            <option key={st.id} value={st.id}>
+                              {st.name} ({st.category || 'Comercio'}) • {st.city || 'Venezuela'}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     )}
-
-                    <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '10px',
-                      border: pushTargetScope === 'ALL_STORES' ? '2px solid var(--c-primary)' : '1px solid #E2E8F0',
-                      background: pushTargetScope === 'ALL_STORES' ? 'rgba(156, 56, 42, 0.05)' : '#FFFFFF',
-                      cursor: 'pointer',
-                      fontSize: '0.82rem',
-                      fontWeight: 700
-                    }}>
-                      <input
-                        type="radio"
-                        name="pushScope"
-                        value="ALL_STORES"
-                        checked={pushTargetScope === 'ALL_STORES'}
-                        onChange={() => setPushTargetScope('ALL_STORES')}
-                        style={{ accentColor: 'var(--c-primary)' }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div>📢 Todos los comercios ({stores.length})</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                          Envía broadcast a toda la red de comercios aliados
-                        </div>
-                      </div>
-                    </label>
                   </div>
                 </div>
 

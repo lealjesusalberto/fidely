@@ -348,6 +348,33 @@ export default function POSView({
     5.0
   );
 
+  // Alertas / Comunicados Oficiales de la Administración para Comercios
+  const [dismissedAdminAlerts, setDismissedAdminAlerts] = useState(() => {
+    try {
+      const stored = localStorage.getItem(`fidely_dismissed_admin_alerts_${currentStoreObj?.id}`);
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const activeAdminAlert = useMemo(() => {
+    const alert = currentStoreObj?.lastAdminAlert;
+    if (!alert || !alert.id) return null;
+    if (dismissedAdminAlerts.includes(alert.id)) return null;
+    return alert;
+  }, [currentStoreObj?.lastAdminAlert, dismissedAdminAlerts]);
+
+  const handleDismissAdminAlert = (alertId) => {
+    setDismissedAdminAlerts(prev => {
+      const next = [...prev, alertId];
+      try {
+        localStorage.setItem(`fidely_dismissed_admin_alerts_${currentStoreObj?.id}`, JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
   // Helper para renderizar iconos de sellos con calidad vectorial profesional
   const renderStampIconHelper = (iconKey, size = 18, color = '#FFFFFF') => {
     if (!iconKey) return <Star size={size} color={color} fill={color} strokeWidth={1.5} />;
@@ -2648,6 +2675,58 @@ export default function POSView({
             </div>
           )}
 
+          {/* COMUNICADO OFICIAL DE ADMINISTRACIÓN (MÓVIL) */}
+          {activeAdminAlert && (
+            <div style={{ padding: '10px 14px 0', maxWidth: '560px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(112, 9, 43, 0.08) 0%, rgba(184, 93, 67, 0.12) 100%)',
+                border: '1.5px solid var(--c-primary, #70092B)',
+                borderRadius: '14px',
+                padding: '12px 14px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: '10px',
+                boxShadow: '0 2px 8px rgba(112, 9, 43, 0.06)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', minWidth: 0, flex: 1 }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: 'var(--c-primary, #70092B)',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <Megaphone size={16} />
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--c-primary, #70092B)', textTransform: 'uppercase' }}>
+                      📢 Comunicado de Administración
+                    </div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-main)', margin: '2px 0' }}>
+                      {activeAdminAlert.title}
+                    </div>
+                    <div style={{ fontSize: '0.76rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
+                      {activeAdminAlert.body}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDismissAdminAlert(activeAdminAlert.id)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '2px' }}
+                  title="Cerrar comunicado"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Selector de Pestañas Móviles (Grandes y Táctiles) */}
           <div style={{ padding: '12px 14px 6px', maxWidth: '560px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
             <div style={{
@@ -3857,6 +3936,80 @@ export default function POSView({
 
         {/* Workspace Body Area */}
         <div className="pos-workspace-content">
+
+          {/* COMUNICADO OFICIAL DE ADMINISTRACIÓN (DESKTOP / WEB POS) */}
+          {activeAdminAlert && (
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(112, 9, 43, 0.08) 0%, rgba(184, 93, 67, 0.12) 100%)',
+              border: '1.5px solid var(--c-primary, #70092B)',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: '14px',
+              boxShadow: '0 4px 16px rgba(112, 9, 43, 0.08)',
+              animation: 'posFadeInBackdrop 0.25s ease-out'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', minWidth: 0, flex: 1 }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  background: 'var(--c-primary, #70092B)',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Megaphone size={20} />
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      color: 'var(--c-primary, #70092B)',
+                      background: '#FFFFFF',
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      border: '1px solid var(--c-primary)'
+                    }}>
+                      📢 Comunicado Oficial de Administración
+                    </span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      {new Date(activeAdminAlert.sentAt || Date.now()).toLocaleString('es-VE')}
+                    </span>
+                  </div>
+                  <h4 style={{ margin: '6px 0 2px', fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                    {activeAdminAlert.title}
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--text-main)', lineHeight: 1.45 }}>
+                    {activeAdminAlert.body}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDismissAdminAlert(activeAdminAlert.id)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  padding: '4px',
+                  borderRadius: '6px'
+                }}
+                title="Cerrar comunicado"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          )}
 
           {/* CHECKLIST DE PRIMEROS PASOS DEL COMERCIO (ONBOARDING INTERACTIVO) */}
           {showSetupChecklist && !isSubscriptionBlocked && activeTab !== 'MEMBERSHIP' && (
