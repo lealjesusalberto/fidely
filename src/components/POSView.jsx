@@ -206,7 +206,8 @@ export default function POSView({
   const [completedTicket, setCompletedTicket] = useState(null);
 
   // Accounting Invoicing & Cart State (Bimoneda)
-  const [billingMode, setBillingMode] = useState('ITEMS'); // 'ITEMS' | 'QUICK'
+  // Ocultado temporalmente por solicitud: modo rápido directo activo por defecto
+  const [billingMode, setBillingMode] = useState('QUICK'); // 'QUICK' | 'ITEMS'
   const [cartItems, setCartItems] = useState([]); // [{ id, name, code, category, quantity, priceUsd, taxType }]
   const [productSearch, setProductSearch] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState('ALL');
@@ -2501,7 +2502,8 @@ export default function POSView({
     { id: 'REGISTER_SALE', label: 'Registrar Venta', icon: Receipt, desc: 'Cobro y facturación en caja' },
     { id: 'PENDING_REQUESTS', label: 'Solicitudes QR', icon: Clock, badge: pendingRedemptionsForStore.length, desc: 'Aprobación de sellos en vivo' },
     { id: 'PROMOTIONS', label: 'Promociones Push', icon: Megaphone, badge: clientsWithStoreCard.length > 0 ? `${clientsWithStoreCard.length}` : null, desc: 'Difusión a clientes fidelizados' },
-    { id: 'PRODUCTS_CATALOG', label: 'Catálogo & Precios', icon: Package, desc: 'Productos, servicios e IVA', desktopOnly: true },
+    // Ocultado temporalmente por solicitud: Catálogo y Precios
+    // { id: 'PRODUCTS_CATALOG', label: 'Catálogo & Precios', icon: Package, desc: 'Productos, servicios e IVA', desktopOnly: true },
     { id: 'QR_DISPLAY', label: 'QR de Mostrador', icon: QrCode, desc: 'Display y cartel acrílico' },
     { id: 'SHIFT_SUMMARY', label: 'Cuadre de Turno', icon: BarChart3, desc: 'Facturación e historial', desktopOnly: true },
     {
@@ -5429,7 +5431,8 @@ export default function POSView({
                   </div>
                 </div>
 
-                {/* Mode Switch: Factura por Ítems vs Venta Rápida */}
+                {/* Mode Switch: Factura por Ítems vs Venta Rápida (Oculto temporalmente por solicitud de catálogo y precios) */}
+                {false && (
                 <div style={{
                   display: 'flex',
                   background: '#FAF8F5',
@@ -5480,6 +5483,7 @@ export default function POSView({
                     <span>Monto Rápido</span>
                   </button>
                 </div>
+                )}
               </div>
 
               <form onSubmit={handleRegisterPurchase}>
@@ -6807,8 +6811,8 @@ export default function POSView({
       )}
 
       
-          {/* MODULE 3: CATÁLOGO DE PRODUCTOS Y PRECIOS */}
-          {activeTab === 'PRODUCTS_CATALOG' && (
+          {/* MODULE 3: CATÁLOGO DE PRODUCTOS Y PRECIOS (Ocultado temporalmente) */}
+          {false && activeTab === 'PRODUCTS_CATALOG' && (
             <div style={{ maxWidth: '1080px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {/* Header Panel */}
               <div className="glass-panel" style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
