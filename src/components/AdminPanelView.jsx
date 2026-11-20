@@ -364,6 +364,17 @@ export default function AdminPanelView({
   const [isSendingPushToStores, setIsSendingPushToStores] = useState(false);
   const [pushHistory, setPushHistory] = useState([]);
 
+  // Comercios que tienen token FCM o acceso móvil detectado
+  const storesWithMobileApp = useMemo(() => {
+    return (stores || []).filter(s => 
+      s.hasMobileApp === true ||
+      (s.fcmToken && String(s.fcmToken).trim().length > 10) ||
+      (s.fcm_token && (typeof s.fcm_token === 'string' || s.fcm_token.fcm_token)) ||
+      (Array.isArray(s.fcmTokens) && s.fcmTokens.length > 0)
+    );
+  }, [stores]);
+  const storesWithAppCount = storesWithMobileApp.length;
+
   // Escuchar historial de push enviados
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'admin_push_history'), (snap) => {
@@ -6720,7 +6731,7 @@ service cloud.firestore {
                 <div style={{ fontSize: '1.55rem', fontWeight: 900, color: '#1D4ED8', marginTop: '4px' }}>
                   {pushTargetScope === 'SPECIFIC'
                     ? (pushSelectedStoreId ? 1 : 0)
-                    : (pushTargetScope === 'ACTIVE_APP' ? storesWithAppCount : stores.length)}
+                    : stores.length}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                   {pushTargetScope === 'SPECIFIC' ? 'Comercio seleccionado' : 'Comercios alcanzados'}
