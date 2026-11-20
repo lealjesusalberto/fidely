@@ -349,6 +349,7 @@ export default function POSView({
   );
 
   // Alertas / Comunicados Oficiales de la Administración para Comercios
+  const [liveAdminAlert, setLiveAdminAlert] = useState(null);
   const [dismissedAdminAlerts, setDismissedAdminAlerts] = useState(() => {
     try {
       const stored = localStorage.getItem(`fidely_dismissed_admin_alerts_${currentStoreObj?.id}`);
@@ -358,12 +359,35 @@ export default function POSView({
     }
   });
 
+  // Escuchar comunicados oficiales de la administración en tiempo real desde Firestore y RTDB
+  useEffect(() => {
+    if (!db) return;
+    const unsub = onSnapshot(collection(db, 'admin_store_announcements'), (snap) => {
+      const list = [];
+      snap.forEach(d => list.push({ ...d.data(), id: d.id }));
+      list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      const applicable = list.find(a => 
+        a.scope === 'ALL_STORES' || 
+        a.targetStoreId === safeStore?.id || 
+        a.targetStoreId === currentStoreObj?.id ||
+        (safeStore?.firebaseUid && a.targetStoreId === safeStore.firebaseUid)
+      );
+
+      if (applicable) {
+        setLiveAdminAlert(applicable);
+      }
+    }, (err) => console.warn('[POS] Error escuchando comunicados admin:', err));
+
+    return () => unsub();
+  }, [safeStore?.id, currentStoreObj?.id, safeStore?.firebaseUid]);
+
   const activeAdminAlert = useMemo(() => {
-    const alert = currentStoreObj?.lastAdminAlert;
+    const alert = liveAdminAlert || currentStoreObj?.lastAdminAlert;
     if (!alert || !alert.id) return null;
     if (dismissedAdminAlerts.includes(alert.id)) return null;
     return alert;
-  }, [currentStoreObj?.lastAdminAlert, dismissedAdminAlerts]);
+  }, [liveAdminAlert, currentStoreObj?.lastAdminAlert, dismissedAdminAlerts]);
 
   const handleDismissAdminAlert = (alertId) => {
     setDismissedAdminAlerts(prev => {

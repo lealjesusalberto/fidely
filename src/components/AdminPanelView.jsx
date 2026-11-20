@@ -442,7 +442,45 @@ export default function AdminPanelView({
         timestamp: Date.now()
       };
 
-      // 1. Encolar en Realtime Database en 'notificaciones' (nodo habilitado en reglas)
+      // 1. Disparar Cloud Function oficial para envío de Notificaciones Push FCM a la App Móvil
+      try {
+        await fetch('https://us-central1-conecta2-drive.cloudfunctions.net/sendAdminNotification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: pushTitle.trim(),
+            body: pushBody.trim(),
+            role: 'comercio',
+            targetScope: pushTargetScope,
+            targetStoreNames: targetStores.map(s => s.name),
+            userIds: userIds,
+            tokens: tokens
+          })
+        });
+      } catch (fcmErr) {
+        console.warn('[Push] Error llamando Cloud Function sendAdminNotification:', fcmErr);
+      }
+
+      // 2. Publicar comunicado global en Firestore para todos los terminales Web POS
+      if (db) {
+        try {
+          await setDoc(doc(db, 'admin_store_announcements', jobId), {
+            id: jobId,
+            title: pushTitle.trim(),
+            body: pushBody.trim(),
+            scope: pushTargetScope,
+            targetStoreId: pushTargetScope === 'SPECIFIC' ? pushSelectedStoreId : null,
+            targetStoreName: pushTargetScope === 'SPECIFIC' ? (targetStores[0]?.name || '') : 'Todos los comercios',
+            targetStoresCount: targetStores.length,
+            sentAt: new Date().toISOString(),
+            timestamp: Date.now()
+          });
+        } catch (announcementErr) {
+          console.warn('[Push] Error guardando admin_store_announcements:', announcementErr);
+        }
+      }
+
+      // 3. Encolar en RTDB y alertar en el perfil directo de cada comercio (App Móvil y Web)
       if (rtdb) {
         try {
           await dbSet(dbRef(rtdb, `notificaciones/${jobId}`), notificationPayload);
@@ -450,7 +488,6 @@ export default function AdminPanelView({
           console.warn('[Push] Advertencia encolando en RTDB notificaciones:', rtdbErr);
         }
 
-        // 2. Alertar directamente en el nodo de cada comercio (user_comercio) para App Móvil
         const updateComercioPromises = targetStores.map(async (st) => {
           const storeUid = st.firebaseUid || st.id;
           if (storeUid) {
@@ -465,10 +502,9 @@ export default function AdminPanelView({
               });
             } catch (_) {}
           }
-          // Y actualizar en Firestore stores/{id} para que la Web POS lo reciba instantáneamente
           if (db && st.id) {
             try {
-              await updateDoc(doc(db, 'stores', st.id), {
+              await setDoc(doc(db, 'stores', st.id), {
                 lastAdminAlert: {
                   id: jobId,
                   title: pushTitle.trim(),
@@ -477,14 +513,14 @@ export default function AdminPanelView({
                   timestamp: Date.now(),
                   read: false
                 }
-              });
+              }, { merge: true });
             } catch (_) {}
           }
         });
         await Promise.allSettled(updateComercioPromises);
       }
 
-      // 3. Registrar en Firestore collection 'admin_push_history' para auditoría
+      // 4. Registrar en Firestore collection 'admin_push_history' para auditoría
       const historyItem = {
         id: jobId,
         title: pushTitle.trim(),

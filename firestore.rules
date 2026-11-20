@@ -94,5 +94,10 @@ service cloud.firestore {
     match /admin_push_history/{historyId} {
       allow read, write: if true;
     }
+
+    // 14. Comunicados de Administración a Comercios (Web y App)
+    match /admin_store_announcements/{announcementId} {
+      allow read, write: if true;
+    }
   }
 }
