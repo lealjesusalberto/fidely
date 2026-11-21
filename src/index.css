@@ -3011,6 +3011,22 @@ h6,
   }
 }
 
+/* StoreProfileModal Live Preview Column (sticky solo en escritorio, flujo normal en móvil) */
+.store-modal-preview-col {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  .store-modal-preview-col {
+    position: static !important;
+  }
+}
+
 @media print {
   @page {
     size: auto;

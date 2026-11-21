@@ -340,7 +340,7 @@ export default function Header({
                 className="btn-pill-wine header-login-btn"
                 style={{ padding: '8px 18px', fontSize: '0.82rem', cursor: 'pointer' }}
               >
-                <span>Comenzar gratis</span>
+                <span>Crear mi Tarjeta</span>
                 <span style={{ fontSize: '0.95rem', fontWeight: 800 }}>→</span>
               </button>
             </div>

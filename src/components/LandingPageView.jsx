@@ -288,9 +288,9 @@ export default function LandingPageView({ onNavigate }) {
                     type="button"
                     onClick={() => onNavigate('LOGIN')}
                     className="btn-pill-wine"
-                    title="Comenzar gratis en fidely CLUB"
+                    title="Crear mi Tarjeta en fidely CLUB"
                   >
-                    <span>Comenzar gratis</span>
+                    <span>Crear mi Tarjeta</span>
                     <span style={{ fontSize: '1.1rem', fontWeight: 800 }}>→</span>
                   </button>
 
@@ -430,7 +430,7 @@ export default function LandingPageView({ onNavigate }) {
                               padding: '3px 9px',
                               borderRadius: '9999px'
                             }}>
-                              Comenzar gratis
+                              Crear mi Tarjeta
                             </div>
                           </div>
                         </div>
@@ -475,7 +475,7 @@ export default function LandingPageView({ onNavigate }) {
                               width: 'fit-content',
                               marginTop: '4px'
                             }}>
-                              <span>Comenzar gratis</span>
+                              <span>Crear mi Tarjeta</span>
                               <span>→</span>
                             </div>
                           </div>
@@ -849,9 +849,9 @@ export default function LandingPageView({ onNavigate }) {
                     type="button"
                     onClick={() => onNavigate('LOGIN')}
                     className="btn-pill-cream"
-                    title="Comenzar gratis en fidely CLUB"
+                    title="Crear mi Tarjeta en fidely CLUB"
                   >
-                    <span>Comenzar gratis</span>
+                    <span>Crear mi Tarjeta</span>
                   </button>
                 </div>
 

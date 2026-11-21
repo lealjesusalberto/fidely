@@ -1092,17 +1092,16 @@ export default function StoreProfileModal({
 
         {/* Sub-Tabs de Navegación del Modal */}
         <div style={{
-          display: 'flex',
-          gap: '6px',
-          padding: '8px min(16px, 3vw)',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: '4px',
+          padding: '6px 10px',
           background: '#F8F6F2',
-          borderBottom: '1px solid #EEDCD5',
-          overflowX: 'auto',
-          WebkitOverflowScrolling: 'touch'
+          borderBottom: '1px solid #EEDCD5'
         }}>
           {[
             { id: 'PROFILE', label: '1. Datos & Logo', icon: Store },
-            { id: 'STAMPS', label: '2. Tarjeta & Premios', icon: Sparkles },
+            { id: 'STAMPS', label: '2. Tarjeta', icon: Sparkles },
             { id: 'LOCATION', label: '3. GPS & Avisos', icon: MapPin }
           ].map(tab => {
             const Icon = tab.icon;
@@ -1113,24 +1112,28 @@ export default function StoreProfileModal({
                 type="button"
                 onClick={() => setActiveModalTab(tab.id)}
                 style={{
-                  display: 'inline-flex',
+                  display: 'flex',
                   alignItems: 'center',
-                  gap: '5px',
-                  padding: '6px 12px',
-                  borderRadius: '10px',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  padding: '6px 4px',
+                  borderRadius: '8px',
                   border: isActive ? '1.5px solid var(--c-primary)' : '1px solid #EDE2D5',
                   background: isActive ? 'var(--c-primary)' : '#FFFFFF',
                   color: isActive ? '#FFFFFF' : 'var(--text-main)',
-                  fontSize: '0.74rem',
+                  fontSize: 'clamp(0.64rem, 2.7vw, 0.74rem)',
                   fontWeight: 800,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  minWidth: 0,
                   boxShadow: isActive ? '0 2px 8px rgba(156, 56, 42, 0.2)' : 'none',
                   transition: 'all 0.15s ease'
                 }}
               >
-                <Icon size={13} color={isActive ? '#FFFFFF' : 'var(--c-primary)'} />
-                <span>{tab.label}</span>
+                <Icon size={12} color={isActive ? '#FFFFFF' : 'var(--c-primary)'} style={{ flexShrink: 0 }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{tab.label}</span>
               </button>
             );
           })}
@@ -1397,14 +1400,8 @@ export default function StoreProfileModal({
               gap: '24px',
               alignItems: 'start'
             }}>
-              {/* COLUMNA IZQUIERDA: LIVE PREVIEW STICKY */}
-              <div style={{
-                position: 'sticky',
-                top: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px'
-              }}>
+              {/* COLUMNA IZQUIERDA: LIVE PREVIEW STICKY (solo en escritorio) */}
+              <div className="store-modal-preview-col">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--c-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Sparkles size={15} />
