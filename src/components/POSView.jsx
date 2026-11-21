@@ -4635,7 +4635,7 @@ export default function POSView({
             <div className="pos-card-setup-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
               
               {/* 1. Header Hero con Banner de Bienvenida y Acciones */}
-              <div className="glass-panel" style={{
+              <div className="glass-panel pos-card-setup-hero" style={{
                 background: 'linear-gradient(135deg, #FFFDF9 0%, #FAF3EB 100%)',
                 border: '2px solid #EDE2D5',
                 borderRadius: '24px',
@@ -4742,10 +4742,10 @@ export default function POSView({
               </div>
 
               {/* 2. Grid Principal: Mockup Realista de la Tarjeta + Métricas y Resumen */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 460px) 1fr', gap: '24px', alignItems: 'start' }}>
+              <div className="pos-card-setup-grid">
                 
                 {/* Columna Izquierda: Vista Previa Realista de la Tarjeta Digital */}
-                <div className="glass-panel" style={{ padding: '24px', background: '#FFFFFF', borderRadius: '24px' }}>
+                <div className="glass-panel pos-card-setup-preview" style={{ padding: '24px', background: '#FFFFFF', borderRadius: '24px', minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Eye size={18} color="var(--c-primary)" />
@@ -5008,10 +5008,10 @@ export default function POSView({
                 </div>
 
                 {/* Columna Derecha: Tarjetas de Configuración y Transición a Facturación */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
                   
                   {/* Grid de 4 Pilares de la Tarjeta */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '14px' }}>
                     
                     {/* Pilar 1: Identidad Visual */}
                     <div className="glass-panel" style={{ padding: '18px', background: '#FFFFFF', borderRadius: '18px' }}>

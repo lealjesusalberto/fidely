@@ -347,7 +347,7 @@ h6,
   display: none !important;
 }
 
-.admin-nav-scroll > button {
+.admin-nav-scroll>button {
   flex-shrink: 0 !important;
   white-space: nowrap !important;
 }
@@ -480,17 +480,20 @@ h6,
     gap: 16px;
     padding: 12px;
   }
+
   .admin-sidebar {
     width: 100%;
     position: static;
     flex-direction: column;
     padding: 12px;
   }
+
   .admin-sidebar-nav {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 6px;
   }
+
   .admin-sidebar-link:hover,
   .admin-sidebar-link.active {
     transform: none;
@@ -687,6 +690,7 @@ h6,
     opacity: 0;
     transform: translateY(-6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -707,7 +711,7 @@ h6,
   display: flex;
   flex-direction: column;
   gap: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .admin-store-detail-title {
@@ -729,12 +733,14 @@ h6,
     gap: 10px !important;
     padding: 12px 14px !important;
   }
+
   .admin-store-card-main-info {
     width: 100% !important;
     max-width: 100% !important;
     flex-wrap: wrap !important;
     gap: 10px !important;
   }
+
   .admin-store-card-badges {
     width: 100% !important;
     max-width: 100% !important;
@@ -745,6 +751,7 @@ h6,
 }
 
 @media (max-width: 900px) {
+
   .admin-clients-table th,
   .admin-clients-table td {
     padding: 8px 10px;
@@ -752,6 +759,7 @@ h6,
 }
 
 @media (max-width: 640px) {
+
   .custom-table th,
   .data-table th,
   .custom-table td,
@@ -812,9 +820,11 @@ h6,
     align-items: stretch !important;
     gap: 14px !important;
   }
+
   .admin-search-wrapper {
     width: 100% !important;
   }
+
   .admin-controls-bar {
     flex-direction: column !important;
     align-items: stretch !important;
@@ -827,10 +837,12 @@ h6,
   .admin-panel-view {
     padding: 12px 10px !important;
   }
+
   .glass-panel {
     padding: 16px !important;
     border-radius: 14px !important;
   }
+
   .btn {
     padding: 10px 16px;
     font-size: 0.86rem;
@@ -943,7 +955,7 @@ h6,
 .fidely-auth-container {
   width: 100%;
   max-width: 1040px;
-  min-height: 590px;
+  min-height: 670px;
   background: #FFFFFF;
   border-radius: 28px;
   box-shadow: 0 25px 70px -15px rgba(26, 19, 17, 0.12), 0 2px 10px rgba(0, 0, 0, 0.02), 0 0 0 1px rgba(0, 0, 0, 0.06);
@@ -1097,6 +1109,7 @@ h6,
 /* ================= RIGHT SHOWCASE COLUMN (Editorial Image) ================= */
 .fidely-auth-showcase-side {
   width: 52%;
+  min-height: 670px;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -1549,10 +1562,20 @@ h6,
 
   .fidely-auth-showcase-side {
     width: 100% !important;
-    min-height: 200px !important;
-    max-height: 240px !important;
-    padding: 16px 18px !important;
+    min-height: 360px !important;
+    max-height: 420px !important;
+    padding: 18px 18px !important;
     order: -1;
+  }
+
+  .pos-card-setup-hero {
+    padding: 18px 16px !important;
+    border-radius: 18px !important;
+  }
+
+  .pos-card-setup-preview {
+    padding: 16px !important;
+    border-radius: 18px !important;
   }
 
   .showcase-script-watermark {
@@ -2525,8 +2548,13 @@ h6,
 }
 
 @keyframes scrollProgressTrack {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
 }
 
 /* =========================================================================
@@ -2538,8 +2566,8 @@ h6,
   opacity: 0;
   transform: translateY(50px) scale(0.97);
   transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.85s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.85s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
@@ -2553,9 +2581,9 @@ h6,
   opacity: 0;
   transform: translateY(42px) scale(0.95);
   transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.35s ease,
-              border-color 0.35s ease;
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s ease,
+    border-color 0.35s ease;
   will-change: opacity, transform;
 }
 
@@ -2565,12 +2593,29 @@ h6,
 }
 
 /* Staggered cascades for siblings */
-.stagger-1 { transition-delay: 0.08s !important; }
-.stagger-2 { transition-delay: 0.16s !important; }
-.stagger-3 { transition-delay: 0.24s !important; }
-.stagger-4 { transition-delay: 0.32s !important; }
-.stagger-5 { transition-delay: 0.40s !important; }
-.stagger-6 { transition-delay: 0.48s !important; }
+.stagger-1 {
+  transition-delay: 0.08s !important;
+}
+
+.stagger-2 {
+  transition-delay: 0.16s !important;
+}
+
+.stagger-3 {
+  transition-delay: 0.24s !important;
+}
+
+.stagger-4 {
+  transition-delay: 0.32s !important;
+}
+
+.stagger-5 {
+  transition-delay: 0.40s !important;
+}
+
+.stagger-6 {
+  transition-delay: 0.48s !important;
+}
 
 /* Pure CSS Scroll-Driven Animations (Chrome 115+, Edge 115+) */
 @supports (animation-timeline: view()) {
@@ -2598,6 +2643,7 @@ h6,
     opacity: 0;
     transform: translateY(60px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -2609,6 +2655,7 @@ h6,
     opacity: 0.1;
     transform: scale(0.92) translateY(40px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -2620,10 +2667,12 @@ h6,
     transform: scale(0.7) rotate(-10deg);
     opacity: 0.3;
   }
+
   70% {
     transform: scale(1.1) rotate(3deg);
     opacity: 1;
   }
+
   100% {
     transform: scale(1) rotate(0deg);
     opacity: 1;
@@ -2669,9 +2718,12 @@ h6,
 
 /* Floating 3D Card Animation */
 @keyframes cardFloat3D {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px) rotate(-3deg) scale(1);
   }
+
   50% {
     transform: translateY(-10px) rotate(-1deg) scale(1.02);
   }
@@ -2685,9 +2737,12 @@ h6,
 
 /* 3D Storefront Floating */
 @keyframes storeBounceGentle {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-8px);
   }
@@ -2720,15 +2775,20 @@ h6,
 
 /* Animated 3D Pointer Cursor */
 @keyframes cursorPulseClick {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
+
   45% {
     transform: translate(-3px, -3px) scale(0.92);
   }
+
   55% {
     transform: translate(-3px, -3px) scale(0.92);
   }
+
   70% {
     transform: translate(0, 0) scale(1);
   }
@@ -2743,10 +2803,13 @@ h6,
 
 /* Sparkle twinkle */
 @keyframes sparkleTwinkle {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.3;
     transform: scale(0.8) rotate(0deg);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.15) rotate(18deg);
@@ -2836,8 +2899,13 @@ h6,
 
 /* Progress Fill 4s Keyframe */
 @keyframes fillProgress4s {
-  0% { width: 0%; }
-  100% { width: 100%; }
+  0% {
+    width: 0%;
+  }
+
+  100% {
+    width: 100%;
+  }
 }
 
 .hero-progress-fill {
@@ -2878,9 +2946,12 @@ h6,
 
 /* Phone Mockup Floating Glow */
 @keyframes phoneTiltFloat {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(-3deg) translateY(0px);
   }
+
   50% {
     transform: rotate(-1deg) translateY(-8px);
   }
@@ -2896,12 +2967,15 @@ h6,
     top: 5%;
     opacity: 0;
   }
+
   15% {
     opacity: 1;
   }
+
   85% {
     opacity: 1;
   }
+
   100% {
     top: 92%;
     opacity: 0;
@@ -2921,6 +2995,22 @@ h6,
 /* =========================================================================
    ESTILOS DE IMPRESIÓN (PRINT MEDIA) PARA CARTELES Y AFICHES
    ========================================================================= */
+/* POS Card Setup Responsive Grid */
+.pos-card-setup-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 460px) 1fr;
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .pos-card-setup-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+
 @media print {
   @page {
     size: auto;

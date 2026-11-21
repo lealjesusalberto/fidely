@@ -14,34 +14,39 @@ export default function AllianceFloatingBanner() {
         onClick={() => setIsOpen(true)}
         style={{
           position: 'fixed',
-          bottom: '22px',
-          right: '22px',
+          bottom: '12px',
+          left: '50%',
+          transform: 'translateX(-50%)',
           zIndex: 9999,
           background: 'linear-gradient(135deg, #1C1917 0%, #2A1713 100%)',
-          border: '1.5px solid rgba(224, 138, 117, 0.45)',
+          border: '1px solid rgba(224, 138, 117, 0.45)',
           borderRadius: '9999px',
-          padding: '9px 18px',
-          boxShadow: '0 12px 32px rgba(0,0,0,0.4), 0 0 18px rgba(184, 93, 67, 0.25)',
-          display: 'flex',
+          padding: '6px 14px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.35), 0 0 12px rgba(184, 93, 67, 0.2)',
+          display: 'inline-flex',
           alignItems: 'center',
-          gap: '8px',
+          justifyContent: 'center',
+          gap: '6px',
           cursor: 'pointer',
           color: '#FFFFFF',
+          maxWidth: 'calc(100vw - 24px)',
+          whiteSpace: 'nowrap',
           transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
         }}
       >
         <span style={{
-          width: '8px',
-          height: '8px',
+          width: '6px',
+          height: '6px',
           borderRadius: '50%',
           background: '#10B981',
-          boxShadow: '0 0 8px #10B981'
+          boxShadow: '0 0 6px #10B981',
+          flexShrink: 0
         }} />
-        <Smartphone size={15} color="#F2A691" />
-        <span style={{ fontSize: '0.82rem', fontWeight: 800, letterSpacing: '-0.01em' }}>
+        <Smartphone size={13} color="#F2A691" style={{ flexShrink: 0 }} />
+        <span style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           App Móvil: Solo Clientes • Tiendas vía Web
         </span>
-        <span style={{ fontSize: '11px', color: '#F2A691' }}>▲</span>
+        <span style={{ fontSize: '9px', color: '#F2A691', flexShrink: 0 }}>▲</span>
       </aside>
     );
   }
