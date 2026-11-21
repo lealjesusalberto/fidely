@@ -84,8 +84,29 @@ export default function LoginView({
   onGoToLanding,
   config,
   joinStoreId = null,
-  onClearJoinStore
+  onClearJoinStore,
+  initialTab = null
 }) {
+  // Helper para verificar si la URL o las propiedades indican registro directo de negocio
+  const isDirectStoreRegister = () => {
+    if (initialTab === 'REGISTER_STORE') return true;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const reg = (params.get('registro') || '').toLowerCase();
+      const tab = (params.get('tab') || '').toLowerCase();
+      const mode = (params.get('mode') || params.get('modo') || '').toLowerCase();
+      const regParam = (params.get('register') || params.get('crear') || '').toLowerCase();
+      const path = (window.location.pathname || '').toLowerCase();
+
+      if (['tienda', 'comercio', 'negocio', 'store'].includes(reg)) return true;
+      if (['store', 'tienda', 'register_store', 'comercio', 'negocio'].includes(tab)) return true;
+      if (['store', 'tienda', 'register_store', 'comercio', 'negocio'].includes(mode)) return true;
+      if (['store', 'tienda', 'negocio', 'comercio'].includes(regParam)) return true;
+      if (path.includes('registro-tienda') || path.includes('registro-comercio') || path.includes('registro-negocio') || path.includes('crear-cuenta-negocio') || path.includes('register-store')) return true;
+    } catch (e) { }
+    return false;
+  };
+
   // Encontrar tienda si viene por enlace QR (?join=STORE_ID o ?store=STORE_ID)
   const targetStore = joinStoreId ? stores.find(s =>
     String(s.id || '').toLowerCase() === String(joinStoreId).toLowerCase() ||
@@ -93,19 +114,29 @@ export default function LoginView({
   ) : null;
 
   // Mode: 'JOIN' | 'LOGIN' | 'REGISTER' | 'REGISTER_STORE'
-  const [activeTab, setActiveTab] = useState(joinStoreId ? 'JOIN' : 'LOGIN');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (joinStoreId) return 'JOIN';
+    if (isDirectStoreRegister()) return 'REGISTER_STORE';
+    return 'LOGIN';
+  });
 
   // Modal de Selección para Registro: "¿Qué cuenta deseas crear? (Tienda o Cliente)"
   const [showRoleSelectionModal, setShowRoleSelectionModal] = useState(false);
-  const [authProfileType, setAuthProfileType] = useState('CLIENT'); // 'CLIENT' | 'STORE'
+  const [authProfileType, setAuthProfileType] = useState(() => {
+    return isDirectStoreRegister() ? 'STORE' : 'CLIENT';
+  });
 
-  // Asegurar que si viene con joinStoreId siempre se active la pestaña JOIN
+  // Asegurar que si viene con joinStoreId o enlace directo se active la pestaña adecuada
   useEffect(() => {
     if (joinStoreId) {
       setActiveTab('JOIN');
       setShowRoleSelectionModal(false);
+    } else if (isDirectStoreRegister()) {
+      setActiveTab('REGISTER_STORE');
+      setAuthProfileType('STORE');
+      setShowRoleSelectionModal(false);
     }
-  }, [joinStoreId]);
+  }, [joinStoreId, initialTab]);
 
   // --- LOGIN STATE ---
   const [identifier, setIdentifier] = useState('');
@@ -1358,7 +1389,17 @@ export default function LoginView({
               {(activeTab === 'REGISTER' || activeTab === 'REGISTER_STORE') && (
                 <button
                   type="button"
-                  onClick={() => { setActiveTab('LOGIN'); setLoginError(''); setRegError(''); setStoreError(''); }}
+                  onClick={() => {
+                    setActiveTab('LOGIN');
+                    setLoginError('');
+                    setRegError('');
+                    setStoreError('');
+                    try {
+                      const url = new URL(window.location.href);
+                      ['registro', 'register', 'crear', 'tab', 'mode', 'modo'].forEach(k => url.searchParams.delete(k));
+                      window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
+                    } catch (e) { }
+                  }}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -2106,6 +2147,22 @@ export default function LoginView({
             {activeTab === 'REGISTER_STORE' && (
               <>
                 <div className="fidely-auth-header-text">
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'linear-gradient(135deg, rgba(156, 56, 42, 0.12) 0%, rgba(222, 139, 118, 0.18) 100%)',
+                    color: 'var(--c-primary)',
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '0.73rem',
+                    fontWeight: 800,
+                    marginBottom: '8px',
+                    border: '1px solid rgba(156, 56, 42, 0.2)'
+                  }}>
+                    <Store size={13} />
+                    <span>REGISTRO OFICIAL DE COMERCIOS</span>
+                  </div>
                   <h2>Registra tu Comercio en fidely</h2>
                   <p>Activa tu terminal POS y fideliza a tus clientes con tu propia tarjeta digital de sellos.</p>
                 </div>
@@ -2294,7 +2351,15 @@ export default function LoginView({
                   ¿Ya tienes un comercio registrado?{' '}
                   <button
                     type="button"
-                    onClick={() => { setActiveTab('LOGIN'); setLoginError(''); }}
+                    onClick={() => {
+                      setActiveTab('LOGIN');
+                      setLoginError('');
+                      try {
+                        const url = new URL(window.location.href);
+                        ['registro', 'register', 'crear', 'tab', 'mode', 'modo'].forEach(k => url.searchParams.delete(k));
+                        window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
+                      } catch (e) { }
+                    }}
                   >
                     Inicia sesión aquí
                   </button>

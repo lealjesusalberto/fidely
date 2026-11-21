@@ -3533,6 +3533,37 @@ service cloud.firestore {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button
                       type="button"
+                      onClick={() => {
+                        const directUrl = `${window.location.origin}/?registro=tienda`;
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                          navigator.clipboard.writeText(directUrl);
+                          onNotify('🔗 ¡Enlace de registro de comercios copiado al portapapeles! Listo para enviar por WhatsApp.', 'success');
+                        } else {
+                          prompt('Copia este enlace directo para registrar comercios:', directUrl);
+                        }
+                      }}
+                      className="btn"
+                      style={{
+                        padding: '6px 14px',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(15, 23, 42, 0.2)'
+                      }}
+                      title="Copiar enlace directo para registrar nuevos comercios"
+                    >
+                      <Copy size={13} color="#38BDF8" />
+                      <span>🔗 Link Registro Tiendas</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setShowStoresMapModal(true)}
                       className="btn"
                       style={{
@@ -3571,6 +3602,149 @@ service cloud.firestore {
             {/* SECTION 1: STORES TABLE */}
             {approvalSection === 'STORES' && (
               <div>
+                {/* BANNER INVITACIÓN DIRECTA DE COMERCIOS */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+                  border: '1.5px solid #86EFAC',
+                  borderRadius: '14px',
+                  padding: '14px 18px',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                  boxShadow: '0 2px 10px rgba(16, 185, 129, 0.08)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '260px', flex: 1 }}>
+                    <div style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                      color: '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
+                    }}>
+                      <Store size={22} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#064E3B', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span>Enlace de Registro Directo para Nuevos Comercios</span>
+                        <span style={{ fontSize: '0.66rem', background: '#059669', color: '#FFFFFF', padding: '2px 8px', borderRadius: '12px', fontWeight: 800, letterSpacing: '0.04em' }}>DIRECTO AL FORMULARIO</span>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#047857', marginTop: '3px', lineHeight: 1.4 }}>
+                        Envía este link a las tiendas interesadas para que creen su cuenta y activen su terminal POS inmediatamente sin pasar por el portal general.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{
+                      background: '#FFFFFF',
+                      border: '1px solid #A7F3D0',
+                      borderRadius: '8px',
+                      padding: '7px 12px',
+                      fontSize: '0.76rem',
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      color: '#065F46',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <span>{window.location.origin}/?registro=tienda</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const directUrl = `${window.location.origin}/?registro=tienda`;
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                          navigator.clipboard.writeText(directUrl);
+                          onNotify('📋 ¡Enlace copiado al portapapeles! Listo para pegar y enviar a la tienda.', 'success');
+                        } else {
+                          prompt('Copia este enlace directo para registrar tiendas:', directUrl);
+                        }
+                      }}
+                      className="btn"
+                      style={{
+                        padding: '7px 14px',
+                        fontSize: '0.76rem',
+                        fontWeight: 700,
+                        background: '#059669',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)'
+                      }}
+                      title="Copiar enlace directo al portapapeles"
+                    >
+                      <Copy size={13} />
+                      <span>Copiar Link</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const directUrl = `${window.location.origin}/?registro=tienda`;
+                        const text = `¡Hola! Te invito a registrar tu comercio en fidely CLUB para comenzar a fidelizar a tus clientes con tu propia tarjeta digital de sellos y terminal POS en mostrador: ${directUrl}`;
+                        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+                      }}
+                      className="btn"
+                      style={{
+                        padding: '7px 14px',
+                        fontSize: '0.76rem',
+                        fontWeight: 700,
+                        background: '#16A34A',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)'
+                      }}
+                      title="Compartir por WhatsApp directamente a los comercios"
+                    >
+                      <MessageCircle size={13} />
+                      <span>Enviar por WhatsApp</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.open(`${window.location.origin}/?registro=tienda`, '_blank');
+                      }}
+                      className="btn"
+                      style={{
+                        padding: '7px 12px',
+                        fontSize: '0.76rem',
+                        fontWeight: 700,
+                        background: '#FFFFFF',
+                        color: '#065F46',
+                        border: '1px solid #A7F3D0',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                      }}
+                      title="Abrir formulario en nueva pestaña para probarlo"
+                    >
+                      <ExternalLink size={13} />
+                      <span>Probar Formulario</span>
+                    </button>
+                  </div>
+                </div>
                 {/* BANNER DE RESUMEN DE ESTADO DE MEMBRESÍAS & ACCESO AL PANEL */}
                 <div style={{
                   display: 'grid',

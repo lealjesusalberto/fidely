@@ -1286,7 +1286,7 @@ export default function LandingPageView({ onNavigate }) {
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginTop: '10px' }} className="landing-hero-ctas">
                   <button
                     type="button"
-                    onClick={() => onNavigate('LOGIN')}
+                    onClick={() => onNavigate('LOGIN', 'REGISTER_STORE')}
                     className="btn-pill-wine"
                     title="Sumar mi tienda a la red de comercios"
                   >

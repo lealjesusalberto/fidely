@@ -158,6 +158,29 @@ export default function App() {
     return null;
   });
 
+  // Helper de detección de enlace directo a registro de tienda (?registro=tienda, /registro-tienda, etc.)
+  const isDirectStoreRegisterUrl = () => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const reg = (params.get('registro') || '').toLowerCase();
+      const tab = (params.get('tab') || '').toLowerCase();
+      const mode = (params.get('mode') || params.get('modo') || '').toLowerCase();
+      const regParam = (params.get('register') || params.get('crear') || '').toLowerCase();
+      const path = (window.location.pathname || '').toLowerCase();
+
+      if (['tienda', 'comercio', 'negocio', 'store'].includes(reg)) return true;
+      if (['store', 'tienda', 'register_store', 'comercio', 'negocio'].includes(tab)) return true;
+      if (['store', 'tienda', 'register_store', 'comercio', 'negocio'].includes(mode)) return true;
+      if (['store', 'tienda', 'negocio', 'comercio'].includes(regParam)) return true;
+      if (path.includes('registro-tienda') || path.includes('registro-comercio') || path.includes('registro-negocio') || path.includes('crear-cuenta-negocio') || path.includes('register-store')) return true;
+    } catch (e) { }
+    return false;
+  };
+
+  const [initialLoginTab, setInitialLoginTab] = useState(() => {
+    return isDirectStoreRegisterUrl() ? 'REGISTER_STORE' : null;
+  });
+
   // Parametro de registro rapido en mostrador (?join=STORE_ID o ?store=STORE_ID)
   const [joinStoreId, setJoinStoreId] = useState(() => {
     try {
@@ -171,6 +194,9 @@ export default function App() {
   // Role / View: 'CLIENT' | 'POS' | 'ADMIN' | 'LANDING' | 'LOGIN'
   const [currentRole, setCurrentRole] = useState(() => {
     try {
+      if (isDirectStoreRegisterUrl()) {
+        return 'LOGIN';
+      }
       const params = new URLSearchParams(window.location.search);
       if (params.get('join') || params.get('store')) {
         if (currentUser?.role === 'CLIENT') {
@@ -852,6 +878,7 @@ export default function App() {
               setStores={handleSetStores}
               config={config}
               joinStoreId={joinStoreId}
+              initialTab={initialLoginTab || (isDirectStoreRegisterUrl() ? 'REGISTER_STORE' : null)}
               onClearJoinStore={() => {
                 setJoinStoreId(null);
                 try {
@@ -860,14 +887,20 @@ export default function App() {
               }}
               onLogin={handleLogin}
               onRegisterClient={handleRegisterClient}
-              onGoToLanding={() => setCurrentRole('LANDING')}
+              onGoToLanding={() => {
+                setInitialLoginTab(null);
+                setCurrentRole('LANDING');
+              }}
             />
           )}
 
           {/* 2. PUBLIC LANDING PAGE */}
           {currentRole === 'LANDING' && (
             <LandingPageView
-              onNavigate={() => setCurrentRole('LOGIN')}
+              onNavigate={(role = 'LOGIN', tab = null) => {
+                if (tab) setInitialLoginTab(tab);
+                setCurrentRole(role);
+              }}
               config={config}
             />
           )}
