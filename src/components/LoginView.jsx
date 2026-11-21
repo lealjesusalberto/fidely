@@ -2376,13 +2376,27 @@ export default function LoginView({
         </div>
 
         {/* ================= RIGHT SHOWCASE COLUMN (Brackto Image Showcase) ================= */}
-        <div className="fidely-auth-showcase-side">
+        <div
+          className="fidely-auth-showcase-side"
+          style={activeTab === 'REGISTER_STORE' ? { backgroundImage: "url('/store_showcase.jpg')" } : undefined}
+        >
           <div className="fidely-auth-showcase-overlay" />
           <div className="fidely-auth-showcase-content">
             {/* Top Navigation */}
             <div className="showcase-topbar">
-              <span style={{ fontFamily: 'var(--font-heading)', fontSize: '19px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
-                fidely.
+              <span style={{
+                fontSize: '10.5px',
+                fontWeight: 800,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'rgba(255, 255, 255, 0.9)',
+                background: 'rgba(255, 255, 255, 0.14)',
+                backdropFilter: 'blur(6px)',
+                padding: '4px 10px',
+                borderRadius: '9999px',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}>
+                {activeTab === 'REGISTER_STORE' ? 'RED DE COMERCIOS' : 'CLUB DE FIDELIDAD'}
               </span>
               <div className="showcase-nav-links">
                 <button
@@ -2403,7 +2417,7 @@ export default function LoginView({
                 fidely
               </div>
               <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.92)' }}>
-                CLUB DE BENEFICIOS EXCLUSIVO
+                {activeTab === 'REGISTER_STORE' ? 'TERMINAL POS Y TARJETAS DIGITALES' : 'CLUB DE BENEFICIOS EXCLUSIVO'}
               </div>
             </div>
 
