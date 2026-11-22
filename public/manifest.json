@@ -4,9 +4,9 @@
   "description": "Plataforma de fidelización comercial multitienda y puntos de descuento por local.",
   "icons": [
     {
-      "src": "/fidely_mascot.png",
+      "src": "/logo_launcher.png",
       "type": "image/png",
-      "sizes": "192x192 512x512 1024x1024",
+      "sizes": "192x192 512x512",
       "purpose": "any maskable"
     }
   ],
