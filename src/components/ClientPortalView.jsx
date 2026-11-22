@@ -3,6 +3,7 @@ import QRCodeDisplay from './QRCodeDisplay';
 import QRCameraScanner from './QRCameraScanner';
 import { fireRedemptionConfetti } from '../utils/confetti';
 import { saveRedemption, saveClient, claimStorePromotionCoupon } from '../firebase/firestoreService';
+import { isStoreSubscriptionBlocked } from '../utils/subscriptionUtils';
 import {
   Coffee,
   ShoppingBag,
@@ -159,8 +160,11 @@ export default function ClientPortalView({
 }) {
   const allStores = useMemo(() => (Array.isArray(stores) ? stores : []), [stores]);
   const approvedStores = useMemo(() => (
-    allStores.filter(s => s.status === 'APROBADO' || !s.status || s.status === 'ACTIVO')
-  ), [allStores]);
+    allStores.filter(s =>
+      (s.status === 'APROBADO' || !s.status || s.status === 'ACTIVO') &&
+      !isStoreSubscriptionBlocked(s, config)
+    )
+  ), [allStores, config]);
 
   const [activeTab, setActiveTab] = useState('INICIO'); // 'INICIO' | 'TIENDAS' | 'RECOMPENSAS' | 'ACTIVIDAD'
   const [selectedStoreFilter, setSelectedStoreFilter] = useState('ALL'); // 'ALL' or storeId
