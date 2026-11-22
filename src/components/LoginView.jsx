@@ -175,7 +175,34 @@ export default function LoginView({
   const [forgotModal, setForgotModal] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [showcaseSlide, setShowcaseSlide] = useState(0);
+  const [storeBannerIndex, setStoreBannerIndex] = useState(0);
   const [showStoreOnboarding, setShowStoreOnboarding] = useState(false);
+
+  const STORE_SHOWCASE_BANNERS = [
+    { label: '☕ Cafetería & Comercio', image: '/store_showcase.jpg' },
+    { label: '💈 Barbería', image: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=900&q=80' },
+    { label: '🍦 Heladería', image: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=900&q=80' },
+    { label: '🖋️ Estudio de Tatuajes', image: 'https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?auto=format&fit=crop&w=900&q=80' },
+    { label: '💅 Manicurista & Spa', image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=900&q=80' },
+    { label: '💊 Farmacia', image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&w=900&q=80' },
+    { label: '🛒 Supermercado', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80' },
+    { label: '🍽️ Restaurante', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80' },
+    { label: '🐾 Veterinario', image: 'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?auto=format&fit=crop&w=900&q=80' },
+    { label: '🚗 Autolavado', image: 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&w=900&q=80' }
+  ];
+
+  // Rotar automáticamente los banners de rubros cada 2 segundos en la vista de registro de tienda
+  useEffect(() => {
+    if (activeTab !== 'REGISTER_STORE') return;
+    STORE_SHOWCASE_BANNERS.forEach((b) => {
+      const img = new Image();
+      img.src = b.image;
+    });
+    const timer = setInterval(() => {
+      setStoreBannerIndex((prev) => (prev + 1) % STORE_SHOWCASE_BANNERS.length);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [activeTab]);
   const [pendingStoreForPos, setPendingStoreForPos] = useState(null);
 
   // --- MODAL DE DEFINICIÓN DE ROL TRAS LOGIN CON GOOGLE ---
@@ -2378,8 +2405,24 @@ export default function LoginView({
         {/* ================= RIGHT SHOWCASE COLUMN (Brackto Image Showcase) ================= */}
         <div
           className="fidely-auth-showcase-side"
-          style={activeTab === 'REGISTER_STORE' ? { backgroundImage: "url('/store_showcase.jpg')" } : undefined}
+          style={activeTab === 'REGISTER_STORE' ? { backgroundImage: 'none', backgroundColor: '#1C1413' } : undefined}
         >
+          {activeTab === 'REGISTER_STORE' && STORE_SHOWCASE_BANNERS.map((banner, idx) => (
+            <div
+              key={banner.label}
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundImage: `url('${banner.image}')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center 20%',
+                opacity: storeBannerIndex === idx ? 1 : 0,
+                transition: 'opacity 0.65s ease-in-out',
+                zIndex: 0
+              }}
+            />
+          ))}
           <div className="fidely-auth-showcase-overlay" />
           <div className="fidely-auth-showcase-content">
             {/* Top Navigation */}
@@ -2387,16 +2430,19 @@ export default function LoginView({
               <span style={{
                 fontSize: '10.5px',
                 fontWeight: 800,
-                letterSpacing: '0.1em',
+                letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                color: 'rgba(255, 255, 255, 0.9)',
-                background: 'rgba(255, 255, 255, 0.14)',
+                color: 'rgba(255, 255, 255, 0.95)',
+                background: 'rgba(255, 255, 255, 0.16)',
                 backdropFilter: 'blur(6px)',
                 padding: '4px 10px',
                 borderRadius: '9999px',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                transition: 'all 0.3s ease'
               }}>
-                {activeTab === 'REGISTER_STORE' ? 'RED DE COMERCIOS' : 'CLUB DE FIDELIDAD'}
+                {activeTab === 'REGISTER_STORE'
+                  ? STORE_SHOWCASE_BANNERS[storeBannerIndex]?.label || 'RED DE COMERCIOS'
+                  : 'CLUB DE FIDELIDAD'}
               </span>
               <div className="showcase-nav-links">
                 <button
