@@ -180,15 +180,15 @@ export default function LoginView({
 
   const STORE_SHOWCASE_BANNERS = [
     { label: '☕ Cafetería & Comercio', image: '/store_showcase.jpg' },
-    { label: '💈 Barbería', image: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=900&q=80' },
-    { label: '🍦 Heladería', image: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=900&q=80' },
-    { label: '🖋️ Estudio de Tatuajes', image: 'https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?auto=format&fit=crop&w=900&q=80' },
-    { label: '💅 Manicurista & Spa', image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=900&q=80' },
-    { label: '💊 Farmacia', image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&w=900&q=80' },
-    { label: '🛒 Supermercado', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80' },
-    { label: '🍽️ Restaurante', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80' },
-    { label: '🐾 Veterinario', image: 'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?auto=format&fit=crop&w=900&q=80' },
-    { label: '🚗 Autolavado', image: 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&w=900&q=80' }
+    { label: '💈 Barbería', image: '/cover_barberia.jpg' },
+    { label: '🍦 Heladería', image: '/cover_heladeria.jpg' },
+    { label: '🖋️ Estudio de Tatuajes', image: '/cover_tatuador.jpg' },
+    { label: '💅 Manicurista & Spa', image: '/cover_manicura.jpg' },
+    { label: '💊 Farmacia', image: '/cover_farmacia.jpg' },
+    { label: '🛒 Supermercado', image: '/cover_supermercado.jpg' },
+    { label: '🍽️ Restaurante', image: '/cover_restaurante.jpg' },
+    { label: '🐾 Veterinario', image: '/cover_veterinario.jpg' },
+    { label: '🚗 Autolavado', image: '/cover_autolavado.jpg' }
   ];
 
   // Rotar automáticamente los banners de rubros cada 2 segundos en la vista de registro de tienda
