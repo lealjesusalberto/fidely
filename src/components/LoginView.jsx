@@ -1376,7 +1376,7 @@ export default function LoginView({
           <div style={{ marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '6px' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                <img src="/fidely_mascot.png" alt="fidely" style={{ width: '30px', height: '30px', objectFit: 'contain' }} />
+                <img src="/fidely.png" alt="fidely" style={{ width: '26px', height: '26px', objectFit: 'contain' }} />
                 <span style={{ fontFamily: 'var(--font-heading)', fontSize: '1.45rem', fontWeight: 800, color: '#1C1917', letterSpacing: '-0.025em' }}>
                   Somos <span style={{ color: 'var(--c-primary)' }}>fidely</span>
                 </span>
