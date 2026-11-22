@@ -953,7 +953,7 @@ export default function App() {
             )
           )}
 
-          {/* 4. POS STORE TERMINAL (Guard with Pending Verification si está activada la aprobación) */}
+          {/* 4. POS STORE TERMINAL (Guard with Pending Verification & Subscription Paywall) */}
           {currentRole === 'POS' && (
             selectedStore?.status === 'RECHAZADO' || (selectedStore?.status === 'PENDIENTE' && config?.requireStoreApproval !== false) ? (
               <PendingVerificationView
@@ -967,6 +967,19 @@ export default function App() {
                 onProceed={(approvedStore) => {
                   setSelectedStore(approvedStore);
                 }}
+                onLogout={handleLogout}
+              />
+            ) : (currentUser?.role !== 'ADMIN' && isStoreSubscriptionBlocked(selectedStore, config)) ? (
+              <StoreSubscriptionPaywallView
+                store={selectedStore}
+                stores={stores}
+                config={config}
+                dolarRateInfo={dolarRateInfo}
+                onRefresh={() => {
+                  const refreshed = stores.find(s => s.id === selectedStore?.id);
+                  if (refreshed) setSelectedStore(refreshed);
+                }}
+                onNotify={handleNotify}
                 onLogout={handleLogout}
               />
             ) : (
