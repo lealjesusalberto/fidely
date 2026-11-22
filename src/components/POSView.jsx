@@ -278,6 +278,8 @@ export default function POSView({
   const [selectedPendingRedemption, setSelectedPendingRedemption] = useState(null);
   const [showStoreQrModal, setShowStoreQrModal] = useState(false);
   const [showPosCameraScanner, setShowPosCameraScanner] = useState(false);
+  const [scannedClientForStamp, setScannedClientForStamp] = useState(null);
+  const [isApprovingDirectStamp, setIsApprovingDirectStamp] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectionReasonInput, setRejectionReasonInput] = useState('');
   const [showClientStampsHistoryModal, setShowClientStampsHistoryModal] = useState(false);
@@ -855,6 +857,33 @@ export default function POSView({
 
     return false;
   };
+
+  // Obtener la tarjeta de fidelización del cliente para esta tienda (prioriza la que tenga mayor progreso si hubo duplicados)
+  const getClientStoreCard = (clientObj) => {
+    if (!clientObj || !Array.isArray(clientObj.loyaltyCards)) return null;
+    const matches = clientObj.loyaltyCards.filter(c =>
+      isMatchStore(c.storeId, safeStore.id, c.storeName, safeStore.name)
+    );
+    if (matches.length === 0) return null;
+    if (matches.length === 1) return matches[0];
+    return [...matches].sort((a, b) => (Number(b.currentStamps) || 0) - (Number(a.currentStamps) || 0))[0];
+  };
+
+  // Mantener identifiedClient y scannedClientForStamp sincronizados cuando Firestore actualiza clients
+  useEffect(() => {
+    if (identifiedClient?.id && Array.isArray(clients)) {
+      const latest = clients.find(c => c.id === identifiedClient.id);
+      if (latest && JSON.stringify(latest.loyaltyCards || []) !== JSON.stringify(identifiedClient.loyaltyCards || [])) {
+        setIdentifiedClient(latest);
+      }
+    }
+    if (scannedClientForStamp?.id && Array.isArray(clients)) {
+      const latestScanned = clients.find(c => c.id === scannedClientForStamp.id);
+      if (latestScanned && JSON.stringify(latestScanned.loyaltyCards || []) !== JSON.stringify(scannedClientForStamp.loyaltyCards || [])) {
+        setScannedClientForStamp(latestScanned);
+      }
+    }
+  }, [clients]);
 
   // Calculate purchases and previous clients for this store
   const storePurchases = purchases.filter(
@@ -1516,16 +1545,144 @@ export default function POSView({
       (clean.includes('FIDELY-') && c.qrCode?.toLowerCase().includes(clean.toLowerCase()))
     );
     if (matched) {
-      setIdentifiedClient(matched);
       setShowPosCameraScanner(false);
-      const existingCard = (matched.loyaltyCards || []).find(c => c.storeId === safeStore.id);
-      if (existingCard) {
-        onNotify(`¡Socio(a) ${matched.name} identificado(a)! Tarjeta de fidelización activa (${existingCard.currentStamps}/${existingCard.stampsTarget} sellos).`, 'success');
+      const existingCard = getClientStoreCard(matched);
+      if (isMobilePosMode) {
+        // En el panel móvil: ir directo a aprobar el sello al cliente escaneado, sin llevarlo a procesar compra
+        setScannedClientForStamp(matched);
+        onNotify(`¡Socio(a) ${matched.name} identificado(a)! Confirma para aprobar su sello.`, 'success');
       } else {
-        onNotify(`¡Socio(a) ${matched.name} identificado(a)! Al procesar su compra se creará su Tarjeta de Fidelización de ${safeStore.name} con su 1er sello.`, 'info');
+        setIdentifiedClient(matched);
+        if (existingCard) {
+          onNotify(`¡Socio(a) ${matched.name} identificado(a)! Tarjeta de fidelización activa (${existingCard.currentStamps || 0}/${existingCard.stampsTarget || safeStore.stampsTarget || 6} sellos).`, 'success');
+        } else {
+          onNotify(`¡Socio(a) ${matched.name} identificado(a)! Al procesar su compra se creará su Tarjeta de Fidelización de ${safeStore.name} con su 1er sello.`, 'info');
+        }
       }
     } else {
       onNotify(`Código QR no coincide con ningún cliente registrado (${clean})`, 'warning');
+    }
+  };
+
+  // Aprobación directa de +1 Sello tras escanear el QR del cliente desde el panel móvil
+  const handleDirectApproveStampForClient = async (targetClient) => {
+    if (!targetClient) return;
+    if (isSubscriptionBlocked) {
+      if (onNotify) onNotify('⚠️ Debes adquirir una membresía de fidely PRO para poder aprobar y otorgar sellos a tus clientes.', 'warning');
+      setScannedClientForStamp(null);
+      setIsMobilePosMode(false);
+      setActiveTab('MEMBERSHIP');
+      return;
+    }
+
+    setIsApprovingDirectStamp(true);
+    try {
+      const currentDate = new Date().toISOString();
+      const currentDateFormatted = currentDate.replace('T', ' ').slice(0, 16);
+
+      const clientCards = targetClient.loyaltyCards || [];
+      const existingCard = getClientStoreCard(targetClient);
+      let updatedLoyaltyCards = [...clientCards];
+      let newStampsCount = 1;
+      let targetStamps = Number(safeStore.stampsTarget || 6);
+
+      const storeRewards = (safeStore.stampRewards && safeStore.stampRewards.length > 0)
+        ? safeStore.stampRewards
+        : [{ id: 'def_rew', stamps: targetStamps, title: safeStore.rewardTitle || 'Premio de Fidelidad', icon: '🎁' }];
+      const maxStamps = Math.max(...storeRewards.map(r => Number(r.stamps) || 6), targetStamps);
+
+      if (!existingCard) {
+        newStampsCount = 1;
+        const newCard = {
+          id: `CARD-${safeStore.id}-${(targetClient.id || 'CLI').replace(/[^a-zA-Z0-9]/g, '').slice(-4)}`,
+          storeId: safeStore.id,
+          storeName: safeStore.name,
+          storeCategory: safeStore.category || 'Comercio Aliado',
+          cardColor: safeStore.cardColor || safeStore.design?.cardColor || '#9C382A',
+          cardGradient: safeStore.cardGradient || safeStore.design?.cardGradient || '#DE8B76',
+          logo: safeStore.logo || null,
+          stampIcon: safeStore.stampIcon || safeStore.design?.stampIcon || 'star',
+          stampsTarget: maxStamps,
+          currentStamps: 1,
+          stampRewards: storeRewards,
+          rewardTitle: safeStore.rewardTitle || safeStore.currentReward || 'Premio de Fidelidad en Tienda',
+          stampCondition: safeStore.stampCondition || '1 sello por cada compra elegible',
+          status: 'ACTIVA',
+          createdAt: currentDate,
+          lastStampAt: currentDate
+        };
+        updatedLoyaltyCards.push(newCard);
+      } else {
+        newStampsCount = (Number(existingCard.currentStamps) || 0) + 1;
+        targetStamps = existingCard.stampsTarget || maxStamps;
+        updatedLoyaltyCards = updatedLoyaltyCards.map(c =>
+          (c.id === existingCard.id || c.storeId === existingCard.storeId || isMatchStore(c.storeId, safeStore.id, c.storeName, safeStore.name))
+            ? {
+                ...c,
+                storeId: safeStore.id,
+                storeName: safeStore.name,
+                currentStamps: newStampsCount,
+                stampsTarget: maxStamps,
+                stampRewards: storeRewards,
+                rewardTitle: safeStore.rewardTitle || c.rewardTitle,
+                lastStampAt: currentDate
+              }
+            : c
+        );
+      }
+
+      const updatedClientDoc = { ...targetClient, loyaltyCards: updatedLoyaltyCards };
+      await saveClient(updatedClientDoc);
+
+      if (setClients) {
+        setClients(prev => prev.map(c => c.id === targetClient.id ? updatedClientDoc : c));
+      }
+      if (identifiedClient && identifiedClient.id === targetClient.id) {
+        setIdentifiedClient(updatedClientDoc);
+      }
+
+      const approvedRequest = {
+        id: `STAMP-POS-${Date.now().toString().slice(-6)}`,
+        type: 'STAMP_REQUEST',
+        clientId: targetClient.id,
+        clientName: targetClient.name,
+        clientDocId: targetClient.docId || targetClient.cedula || '',
+        storeId: safeStore.id,
+        storeName: safeStore.name,
+        rewardTitle: '+1 Sello de Fidelización (Escaneo QR en Caja)',
+        stampsCost: 0,
+        status: 'APROBADO',
+        date: currentDateFormatted,
+        approvedAt: currentDateFormatted,
+        authorizedBy: safeStore.manager || 'Cajero en Turno',
+        currentStampsAfter: newStampsCount,
+        auditVerified: true
+      };
+      setRedemptions(prev => [approvedRequest, ...(prev || [])]);
+
+      const newMovement = {
+        id: `MOV-STAMP-${Date.now().toString().slice(-4)}`,
+        clientId: targetClient.id,
+        clientName: targetClient.name,
+        type: 'ACREDITACION_SELLO',
+        points: 0,
+        balanceAfter: targetClient.pointsBalance || 0,
+        reference: approvedRequest.id,
+        storeId: safeStore.id,
+        storeName: safeStore.name,
+        authorizedBy: safeStore.manager || 'Cajero en Turno',
+        date: currentDateFormatted,
+        notes: `Aprobación directa por escaneo QR en mostrador: +1 Sello en ${safeStore.name} (${newStampsCount}/${maxStamps})`
+      };
+      setMovements(prev => [newMovement, ...(prev || [])]);
+
+      onNotify(`✅ ¡Sello aprobado para ${targetClient.name}! Ahora tiene ${newStampsCount} de ${maxStamps} sellos.`, 'success');
+      setScannedClientForStamp(null);
+    } catch (err) {
+      console.error('Error aprobando sello directo:', err);
+      onNotify('Error al aprobar el sello. Intenta nuevamente.', 'error');
+    } finally {
+      setIsApprovingDirectStamp(false);
     }
   };
 
@@ -1533,7 +1690,7 @@ export default function POSView({
   const handleRedeemStampRewardInPos = async (reward) => {
     if (!identifiedClient || !reward) return;
     const clientCards = identifiedClient.loyaltyCards || [];
-    const existingCard = clientCards.find(c => c.storeId === safeStore.id);
+    const existingCard = getClientStoreCard(identifiedClient);
     if (!existingCard) {
       onNotify('El socio no tiene tarjeta activa en esta tienda.', 'warning');
       return;
@@ -1547,7 +1704,7 @@ export default function POSView({
 
     const nextStamps = Math.max(0, currentStamps - cost);
     const updatedCards = clientCards.map(c => 
-      c.storeId === safeStore.id
+      (c.id === existingCard.id || c.storeId === existingCard.storeId || isMatchStore(c.storeId, safeStore.id, c.storeName, safeStore.name))
         ? {
             ...c,
             currentStamps: nextStamps,
@@ -2090,31 +2247,31 @@ export default function POSView({
 
     // Gestión de Tarjeta de Fidelización exclusiva de la tienda (Cada tienda tiene su tarjeta)
     const clientCards = identifiedClient.loyaltyCards || [];
-    const existingCard = clientCards.find(c => c.storeId === selectedStore.id);
+    const existingCard = getClientStoreCard(identifiedClient);
     let updatedLoyaltyCards = [...clientCards];
     let cardCreatedInPurchase = false;
 
     if (!existingCard) {
       // Primera compra en esta tienda: Se crea automáticamente la tarjeta de fidelización con su 1er sello
-      const storeRewards = (selectedStore.stampRewards && selectedStore.stampRewards.length > 0)
-        ? selectedStore.stampRewards
-        : [{ id: 'def_rew', stamps: Number(selectedStore.stampsTarget || 6), title: selectedStore.rewardTitle || 'Premio de Fidelidad', icon: '🎁' }];
-      const maxStamps = Math.max(...storeRewards.map(r => Number(r.stamps) || 6), Number(selectedStore.stampsTarget || 6));
+      const storeRewards = (safeStore.stampRewards && safeStore.stampRewards.length > 0)
+        ? safeStore.stampRewards
+        : [{ id: 'def_rew', stamps: Number(safeStore.stampsTarget || 6), title: safeStore.rewardTitle || 'Premio de Fidelidad', icon: '🎁' }];
+      const maxStamps = Math.max(...storeRewards.map(r => Number(r.stamps) || 6), Number(safeStore.stampsTarget || 6));
 
       const newCard = {
-        id: `CARD-${selectedStore.id}-${(identifiedClient.id || 'CLI').replace(/[^a-zA-Z0-9]/g, '').slice(-4)}`,
-        storeId: selectedStore.id,
-        storeName: selectedStore.name,
-        storeCategory: selectedStore.category || 'Comercio Aliado',
-        cardColor: selectedStore.cardColor || selectedStore.design?.cardColor || '#9C382A',
-        cardGradient: selectedStore.cardGradient || selectedStore.design?.cardGradient || '#DE8B76',
-        logo: selectedStore.logo || null,
-        stampIcon: selectedStore.stampIcon || selectedStore.design?.stampIcon || 'star',
+        id: `CARD-${safeStore.id}-${(identifiedClient.id || 'CLI').replace(/[^a-zA-Z0-9]/g, '').slice(-4)}`,
+        storeId: safeStore.id,
+        storeName: safeStore.name,
+        storeCategory: safeStore.category || 'Comercio Aliado',
+        cardColor: safeStore.cardColor || safeStore.design?.cardColor || '#9C382A',
+        cardGradient: safeStore.cardGradient || safeStore.design?.cardGradient || '#DE8B76',
+        logo: safeStore.logo || null,
+        stampIcon: safeStore.stampIcon || safeStore.design?.stampIcon || 'star',
         stampsTarget: maxStamps,
         currentStamps: 1, // Primer sello acreditado por su primera compra
         stampRewards: storeRewards,
-        rewardTitle: selectedStore.rewardTitle || selectedStore.currentReward || 'Premio de Fidelidad en Tienda',
-        stampCondition: selectedStore.stampCondition || '1 sello por cada compra elegible',
+        rewardTitle: safeStore.rewardTitle || safeStore.currentReward || 'Premio de Fidelidad en Tienda',
+        stampCondition: safeStore.stampCondition || '1 sello por cada compra elegible',
         status: 'ACTIVA',
         createdAt: new Date().toISOString(),
         lastStampAt: new Date().toISOString()
@@ -2123,23 +2280,25 @@ export default function POSView({
       cardCreatedInPurchase = true;
     } else {
       // Ya tiene tarjeta: se incrementa 1 sello acumulativo
-      const nextStamps = (existingCard.currentStamps || 0) + 1;
-      const storeRewards = (selectedStore.stampRewards && selectedStore.stampRewards.length > 0)
-        ? selectedStore.stampRewards
+      const nextStamps = (Number(existingCard.currentStamps) || 0) + 1;
+      const storeRewards = (safeStore.stampRewards && safeStore.stampRewards.length > 0)
+        ? safeStore.stampRewards
         : (existingCard.stampRewards || [{ id: 'def_rew', stamps: Number(existingCard.stampsTarget || 6), title: existingCard.rewardTitle || 'Premio de Fidelidad', icon: '🎁' }]);
-      const maxStamps = Math.max(...storeRewards.map(r => Number(r.stamps) || 6), Number(selectedStore.stampsTarget || existingCard.stampsTarget || 6));
+      const maxStamps = Math.max(...storeRewards.map(r => Number(r.stamps) || 6), Number(safeStore.stampsTarget || existingCard.stampsTarget || 6));
 
       updatedLoyaltyCards = updatedLoyaltyCards.map(c => 
-        c.storeId === selectedStore.id
+        (c.id === existingCard.id || c.storeId === existingCard.storeId || isMatchStore(c.storeId, safeStore.id, c.storeName, safeStore.name))
           ? {
               ...c,
-              cardColor: selectedStore.cardColor || c.cardColor,
-              cardGradient: selectedStore.cardGradient || c.cardGradient,
-              logo: selectedStore.logo || c.logo,
-              stampIcon: selectedStore.stampIcon || c.stampIcon,
+              storeId: safeStore.id,
+              storeName: safeStore.name,
+              cardColor: safeStore.cardColor || c.cardColor,
+              cardGradient: safeStore.cardGradient || c.cardGradient,
+              logo: safeStore.logo || c.logo,
+              stampIcon: safeStore.stampIcon || c.stampIcon,
               stampsTarget: maxStamps,
               stampRewards: storeRewards,
-              rewardTitle: selectedStore.rewardTitle || c.rewardTitle,
+              rewardTitle: safeStore.rewardTitle || c.rewardTitle,
               currentStamps: nextStamps, // Acumulación continua para elegir cualquier premio
               lastStampAt: new Date().toISOString()
             }
@@ -5222,7 +5381,7 @@ export default function POSView({
                 </div>
                 {filteredClients.map(client => {
                   const pastPurchases = clientPurchasesCountMap[client.id] || 0;
-                  const clientCard = (client.loyaltyCards || []).find(c => isMatchStore(c.storeId, safeStore.id, c.storeName, safeStore.name));
+                  const clientCard = getClientStoreCard(client);
                   const cardStamps = clientCard ? Number(clientCard.currentStamps || 0) : 0;
                   const cardTarget = clientCard ? Number(clientCard.stampsTarget || safeStore.stampsTarget || 6) : Number(safeStore.stampsTarget || 6);
                   return (
@@ -5326,7 +5485,7 @@ export default function POSView({
                   }}>
                     {previousStoreClients.map(client => {
                       const count = clientPurchasesCountMap[client.id] || 0;
-                      const clientCard = (client.loyaltyCards || []).find(c => isMatchStore(c.storeId, safeStore.id, c.storeName, safeStore.name));
+                      const clientCard = getClientStoreCard(client);
                       const cardStamps = clientCard ? Number(clientCard.currentStamps || 0) : 0;
                       const cardTarget = clientCard ? Number(clientCard.stampsTarget || safeStore.stampsTarget || 6) : Number(safeStore.stampsTarget || 6);
                       return (
@@ -5413,7 +5572,7 @@ export default function POSView({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   {/* Cartilla de Sellos del Cliente en este Local */}
                   {(() => {
-                    const clientCard = (identifiedClient.loyaltyCards || []).find(c => isMatchStore(c.storeId, safeStore.id, c.storeName, safeStore.name));
+                    const clientCard = getClientStoreCard(identifiedClient);
                     const currentStamps = clientCard ? Number(clientCard.currentStamps || 0) : 0;
                     const targetStamps = clientCard ? Number(clientCard.stampsTarget || safeStore.stampsTarget || 6) : Number(safeStore.stampsTarget || 6);
                     const rawRewards = (selectedStore.stampRewards && selectedStore.stampRewards.length > 0)
@@ -10528,6 +10687,114 @@ export default function POSView({
           </div>
         </div>
         )
+      }
+      {
+        scannedClientForStamp && (() => {
+          const clientCard = getClientStoreCard(scannedClientForStamp);
+          const currentStamps = clientCard ? Number(clientCard.currentStamps || 0) : 0;
+          const targetStamps = clientCard ? Number(clientCard.stampsTarget || safeStore.stampsTarget || 6) : Number(safeStore.stampsTarget || 6);
+          return (
+            <div className="modal-overlay" onClick={() => !isApprovingDirectStamp && setScannedClientForStamp(null)}>
+              <div
+                className="modal-dialog"
+                onClick={(e) => e.stopPropagation()}
+                style={{ padding: '24px', borderRadius: '24px', maxWidth: '420px', width: '92%', background: '#FFFFFF', maxHeight: '90vh', overflowY: 'auto' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={20} color="#059669" />
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 900, margin: 0, color: '#1E293B' }}>
+                      Aprobar Sello al Cliente
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isApprovingDirectStamp}
+                    onClick={() => setScannedClientForStamp(null)}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div style={{
+                  background: '#FAF8F5',
+                  border: '1.5px solid #EDE2D5',
+                  borderRadius: '16px',
+                  padding: '16px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#1C1917' }}>
+                    {scannedClientForStamp.name}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '3px', fontWeight: 600 }}>
+                    Cédula: <strong>{scannedClientForStamp.docId || scannedClientForStamp.cedula || 'N/A'}</strong> • Tlf: {scannedClientForStamp.phone || 'N/A'}
+                  </div>
+
+                  <div style={{
+                    marginTop: '12px',
+                    background: '#FFFBEB',
+                    border: '1.5px solid #FDE68A',
+                    borderRadius: '12px',
+                    padding: '10px 14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#92400E', textTransform: 'uppercase' }}>
+                        Sellos actuales en {safeStore.name}
+                      </div>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#B45309' }}>
+                        {currentStamps} de {targetStamps} sellos
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#059669', background: '#DCFCE7', padding: '4px 10px', borderRadius: '999px' }}>
+                      ➔ {currentStamps + 1} / {targetStamps}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <button
+                    type="button"
+                    disabled={isApprovingDirectStamp}
+                    onClick={() => handleDirectApproveStampForClient(scannedClientForStamp)}
+                    style={{
+                      width: '100%',
+                      padding: '13px 16px',
+                      borderRadius: '14px',
+                      background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      fontSize: '0.95rem',
+                      fontWeight: 900,
+                      cursor: isApprovingDirectStamp ? 'wait' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 6px 18px rgba(5, 150, 105, 0.28)'
+                    }}
+                  >
+                    <CheckCircle2 size={18} />
+                    <span>{isApprovingDirectStamp ? 'Aprobando Sello...' : '✅ Aprobar +1 Sello Ahora'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isApprovingDirectStamp}
+                    onClick={() => setScannedClientForStamp(null)}
+                    className="btn btn-secondary"
+                    style={{ width: '100%', padding: '10px', fontSize: '0.84rem', fontWeight: 700 }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()
       }
       <StoreOnboardingModal
         isOpen={showStoreOnboarding}
