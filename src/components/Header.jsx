@@ -130,11 +130,11 @@ export default function Header({
           title={!currentUser ? "fidely CLUB • Inicio" : "fidely CLUB"}
         >
           <img 
-            src="/fidely.png" 
+            src="/fidely_mascot.png" 
             alt="fidely" 
             style={{ 
-              width: '36px', 
-              height: '36px', 
+              width: '40px', 
+              height: '40px', 
               objectFit: 'contain' 
             }} 
           />

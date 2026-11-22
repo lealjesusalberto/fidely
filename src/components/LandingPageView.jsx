@@ -2351,7 +2351,7 @@ export default function LandingPageView({ onNavigate }) {
             {/* Brand column */}
             <div style={{ maxWidth: '340px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <img src="/fidely.png" alt="fidely" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+                <img src="/fidely_mascot.png" alt="fidely" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
                 <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
                   fidely <span style={{ color: 'var(--c-primary)', fontSize: '0.75rem', letterSpacing: '0.08em' }}>CLUB</span>
                 </span>
